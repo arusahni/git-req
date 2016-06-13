@@ -1,5 +1,18 @@
-#!/bin/bash -x
+#!/bin/bash
 # vim: set ft=sh:
+
+#######################################################################
+#                               git-req                               #
+# By Aru Sahni                                                        #
+# - arusahni@gmail.com                                                #
+# - https://github.com/arusahni/git-req                               #
+#                                                                     #
+# MIT License, (c) 2016 Aru Sahni, http://arusahni.net                #
+#                                                                     #
+# Easily switch between merge requests in your GitLab/GitHub hosted   #
+#  repos.                                                             #
+#######################################################################
+
 
 export SUBDIRECTORY_OK=1
 source "$(git --exec-path)/git-sh-setup"

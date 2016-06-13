@@ -1,0 +1,125 @@
+#!/bin/bash -x
+# vim: set ft=sh:
+
+export SUBDIRECTORY_OK=1
+source "$(git --exec-path)/git-sh-setup"
+export USAGE="<MR or PR #>"
+
+REQ_CONFIG="$HOME/.gitreqconfig"
+ORIGIN="$(git config --get remote.origin.url)"
+
+ERROR_MR_MISSING=2
+ERROR_UNAUTHORIZED=3
+
+EXTRACT_DOMAIN="from __future__ import print_function; import sys, re; print(re.search(ur'((http[s]?|ssh):\/\/)?(\S+@)?(([^:\/])+)', sys.stdin.read()).group(4))"
+GITHUB_PROJECT_REGEX=".*:(.*\/\S+)\.git$"
+GITLAB_PROJECT_REGEX=".*\/(\S+)\.git$"
+EXTRACT_PROJECT_NAME_PREFIX="from __future__ import print_function; import sys, re; print(re.search(ur'"
+EXTRACT_PROJECT_NAME_SUFFIX="', sys.stdin.read()).group(1))"
+EXTRACT_PROJECT_ID="from __future__ import print_function; import sys, json; resp=json.load(sys.stdin, strict=False); sys.exit($ERROR_UNAUTHORIZED) if isinstance(resp, dict) and resp.get('message') == '401 Unauthorized' else print(resp[0]['id'])"
+EXTRACT_SOURCE_BRANCH="from __future__ import print_function; import sys, json; print(json.load(sys.stdin, strict=False)[0]['source_branch'])"
+
+DOMAIN="$(echo "$ORIGIN" | python -c "$EXTRACT_DOMAIN")"
+DOMAIN_SLUG="$(echo "$DOMAIN" | tr _. '|')"
+
+IS_GITHUB=0
+if [[ "$DOMAIN" = "github.com" ]]; then
+    IS_GITHUB=1
+    API_ROOT="https://api.github.com/repos"
+    EXTRACT_PROJECT_NAME="${EXTRACT_PROJECT_NAME_PREFIX}${GITHUB_PROJECT_REGEX}${EXTRACT_PROJECT_NAME_SUFFIX}"
+    PROJECT_QUERY_URI="$API_ROOT/repos/"
+else
+    API_ROOT="https://$DOMAIN/api/v3/projects"
+    EXTRACT_PROJECT_NAME="${EXTRACT_PROJECT_NAME_PREFIX}${GITLAB_PROJECT_REGEX}${EXTRACT_PROJECT_NAME_SUFFIX}"
+    PROJECT_QUERY_URI="$API_ROOT/search/"
+fi
+
+API_KEY=$(git config -f "$REQ_CONFIG" --get "req.${DOMAIN_SLUG}.apikey")
+if [[ -z "$API_KEY" && $IS_GITHUB == 0 ]]; then
+    echo -n "Please enter the API credentials for $DOMAIN: "
+    read API_KEY
+    git config -f "$REQ_CONFIG" "req.${DOMAIN_SLUG}.apikey" "$API_KEY"
+fi
+
+function _query_api() {
+    if [[ $IS_GITHUB -eq 1 ]]; then
+        # This branch will never be entered since I found an API-less way to do handle GitHub.
+        #  Keeping around for posterity.
+        curl -s -k --header "Authorization: token $API_KEY" "$1"
+    else
+        curl -s -k --header "PRIVATE-TOKEN: $API_KEY" "$1"
+    fi
+}
+
+function _get_project_id() {
+    PROJECT_ID=$(git config --get --local req.projectid)
+    if [[ -n $PROJECT_ID ]]; then
+        echo "$PROJECT_ID"
+    else
+        PROJECT_NAME=$(echo "$ORIGIN" | python -c "$EXTRACT_PROJECT_NAME")
+        if [[ $IS_GITHUB -eq 1 ]]; then
+            PROJECT_ID="$PROJECT_NAME"
+        else
+            RESPONSE=$(_query_api "${PROJECT_QUERY_URI}${PROJECT_NAME}")
+            PROJECT_ID=$(echo "$RESPONSE" | python -c "$EXTRACT_PROJECT_ID")
+            if [[ $? == "$ERROR_UNAUTHORIZED" ]]; then
+                die "Bad API credentials."
+            fi
+        fi
+        git config --local req.projectid "$PROJECT_ID"
+        echo "$PROJECT_ID"
+    fi
+}
+
+function _get_branch() {
+    PROJECT_ID=$1
+    REQ_NUM=$2
+
+    if [[ "$IS_GITHUB" -eq 1 ]]; then
+        LOCAL_BRANCH_NAME="pr/$REQ_NUM"
+        LOCAL_SHA=$(git rev-parse --verify "$LOCAL_BRANCH_NAME" 2> /dev/null)
+        if [[ ! -n $LOCAL_SHA ]]; then
+            git fetch origin "refs/pull/$REQ_NUM/head:$LOCAL_BRANCH_NAME" &> /dev/null
+            if [[ $? != 0 ]]; then
+                return $ERROR_MR_MISSING
+            fi
+        fi
+        echo "$LOCAL_BRANCH_NAME"
+    else
+        RESPONSE=$(_query_api "$API_ROOT/$PROJECT_ID/merge_requests?iid=$REQ_NUM")
+        if [[ $RESPONSE == "[]" ]]; then
+            return $ERROR_MR_MISSING
+        fi
+        echo "$RESPONSE" | python -c "$EXTRACT_SOURCE_BRANCH"
+    fi
+}
+
+function _checkout_mr() {
+    PROJECT_ID="$(_get_project_id)"
+    if [[ -n $PROJECT_ID ]]; then
+        BRANCH=$(_get_branch "$PROJECT_ID" "$1")
+        if [[ $? == "$ERROR_MR_MISSING" ]]; then
+            die "No MR/PR with that ID exists"
+        fi
+        SHA=$(git rev-parse --verify "$BRANCH")
+        if [[ -n $SHA ]]; then
+            git checkout "$BRANCH"
+        else
+            git fetch
+            SHA=$(git rev-parse --verify origin/"$BRANCH")
+            if [[ -n $SHA ]]; then
+                git checkout "$BRANCH"
+            else
+                die "Could not find remote branch $BRANCH"
+            fi
+        fi
+    else
+        die "Could not get project number."
+    fi
+}
+
+if [[ $# == 1 ]]; then
+    _checkout_mr "$1"
+else
+    usage
+fi

@@ -114,7 +114,7 @@ function _checkout_mr() {
         if [[ $? == "$ERROR_MR_MISSING" ]]; then
             die "No MR/PR with that ID exists"
         fi
-        SHA=$(git rev-parse --verify "$BRANCH")
+        SHA=$(git rev-parse --verify "$BRANCH" 2> /dev/null)
         if [[ -n $SHA ]]; then
             git checkout "$BRANCH"
         else

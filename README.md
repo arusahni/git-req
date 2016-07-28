@@ -32,7 +32,7 @@ Configuration
 I plan on introducting a better command line API in the future to manage the various configuration settings.
 Currently they can only be managed by editing the various configuration files that git-req writes too.
 
-##### $HOME/.gitreqrc
+##### $HOME/.gitreqconfig
 
 This contains global settings - at the moment, it only stores domain API keys. Edit this if you have to issue a new key or edit a bad one.
 

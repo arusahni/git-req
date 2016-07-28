@@ -24,7 +24,7 @@ That's exactly what *git-req* does.
 Installation
 ------------
 
-Simply place the `git-req` script somewhere in your `$PATH`.
+Simply place the `git-req` script somewhere in your `$PATH`. The first time you run `git req <#>` it will prompt you for API credentials; use a Personal Access Token (see Profile Settings > Personal Access Token in GitLab or GitHub).
 
 Configuration
 -------------

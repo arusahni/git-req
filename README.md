@@ -6,8 +6,8 @@ git-req
 Why?
 ----
 
-**jrdev**: Hey @aru, can you verify the issue you reported is fixed by mr 17?  
-**aru**: Oh? OK.  
+**jrdev**: Hey @aru, can you verify the issue you reported is fixed by mr 17?
+**aru**: Oh? OK.
 *aru switches to a browser, navigates to his org's GitLab instance, finds the project, clicks to the merge requests view, finds the MR, reads the branch name (`hotfix/jrdevs_new_branch`), switches back to the terminal, inputs `git checkout hotfix/jrdevs_new_branch` (no typos!), and starts jamming on some code.*
 
 ---
@@ -30,7 +30,7 @@ Configuration
 -------------
 
 I plan on introducting a better command line API in the future to manage the various configuration settings.
-Currently they can only be managed by editing the various configuration files that git-req writes too.
+Currently they can only be managed by editing the various configuration files that git-req uses.
 
 ##### $HOME/.gitreqconfig
 

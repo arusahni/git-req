@@ -3,6 +3,7 @@
 
 #######################################################################
 #                               git-req                               #
+#                                v 0.2                                #
 # By Aru Sahni                                                        #
 # - arusahni@gmail.com                                                #
 # - https://github.com/arusahni/git-req                               #
@@ -24,10 +25,10 @@ ORIGIN="$(git config --get remote.origin.url)"
 ERROR_MR_MISSING=2
 ERROR_UNAUTHORIZED=3
 
-EXTRACT_DOMAIN="from __future__ import print_function; import sys, re; print(re.search(ur'((http[s]?|ssh):\/\/)?(\S+@)?(([^:\/])+)', sys.stdin.read()).group(4))"
+EXTRACT_DOMAIN="from __future__ import print_function; import sys, re; print(re.search(r'((http[s]?|ssh):\/\/)?(\S+@)?(([^:\/])+)', sys.stdin.read()).group(4))"
 GITHUB_PROJECT_REGEX=".*:(.*\/\S+)\.git$"
 GITLAB_PROJECT_REGEX=".*\/(\S+)\.git$"
-EXTRACT_PROJECT_NAME_PREFIX="from __future__ import print_function; import sys, re; print(re.search(ur'"
+EXTRACT_PROJECT_NAME_PREFIX="from __future__ import print_function; import sys, re; print(re.search(r'"
 EXTRACT_PROJECT_NAME_SUFFIX="', sys.stdin.read()).group(1))"
 EXTRACT_PROJECT_ID="from __future__ import print_function; import sys, json; resp=json.load(sys.stdin, strict=False); sys.exit($ERROR_UNAUTHORIZED) if isinstance(resp, dict) and resp.get('message') == '401 Unauthorized' else print(resp[0]['id'])"
 EXTRACT_SOURCE_BRANCH="from __future__ import print_function; import sys, json; print(json.load(sys.stdin, strict=False)[0]['source_branch'])"

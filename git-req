@@ -3,7 +3,7 @@
 
 #######################################################################
 #                               git-req                               #
-#                                v 0.2                                #
+#                               v 1.0.0                               #
 # By Aru Sahni                                                        #
 # - arusahni@gmail.com                                                #
 # - https://github.com/arusahni/git-req                               #
@@ -13,7 +13,7 @@
 # Easily switch between merge requests in your GitLab/GitHub hosted   #
 #  repos.                                                             #
 #######################################################################
-
+# set -x
 
 export SUBDIRECTORY_OK=1
 source "$(git --exec-path)/git-sh-setup"
@@ -31,7 +31,7 @@ GITLAB_PROJECT_REGEX=".*\/(\S+)\.git$"
 EXTRACT_PROJECT_NAME_PREFIX="from __future__ import print_function; import sys, re; print(re.search(r'"
 EXTRACT_PROJECT_NAME_SUFFIX="', sys.stdin.read()).group(1))"
 EXTRACT_PROJECT_ID="from __future__ import print_function; import sys, json; resp=json.load(sys.stdin, strict=False); sys.exit($ERROR_UNAUTHORIZED) if isinstance(resp, dict) and resp.get('message') == '401 Unauthorized' else print(resp[0]['id'])"
-EXTRACT_SOURCE_BRANCH="from __future__ import print_function; import sys, json; print(json.load(sys.stdin, strict=False)[0]['source_branch'])"
+EXTRACT_SOURCE_BRANCH="from __future__ import print_function; import sys, json; print(json.load(sys.stdin, strict=False)['source_branch'])"
 
 DOMAIN="$(echo "$ORIGIN" | python -c "$EXTRACT_DOMAIN")"
 DOMAIN_SLUG="$(echo "$DOMAIN" | tr _. '|')"
@@ -43,9 +43,9 @@ if [[ "$DOMAIN" = "github.com" ]]; then
     EXTRACT_PROJECT_NAME="${EXTRACT_PROJECT_NAME_PREFIX}${GITHUB_PROJECT_REGEX}${EXTRACT_PROJECT_NAME_SUFFIX}"
     PROJECT_QUERY_URI="$API_ROOT/repos/"
 else
-    API_ROOT="https://$DOMAIN/api/v3/projects"
+    API_ROOT="https://$DOMAIN/api/v4/projects"
     EXTRACT_PROJECT_NAME="${EXTRACT_PROJECT_NAME_PREFIX}${GITLAB_PROJECT_REGEX}${EXTRACT_PROJECT_NAME_SUFFIX}"
-    PROJECT_QUERY_URI="$API_ROOT/search/"
+    PROJECT_QUERY_URI="$API_ROOT?search="
 fi
 
 API_KEY=$(git config -f "$REQ_CONFIG" --get "req.${DOMAIN_SLUG}.apikey")
@@ -100,7 +100,7 @@ function _get_branch() {
         fi
         echo "$LOCAL_BRANCH_NAME"
     else
-        RESPONSE=$(_query_api "$API_ROOT/$PROJECT_ID/merge_requests?iid=$REQ_NUM")
+        RESPONSE=$(_query_api "$API_ROOT/$PROJECT_ID/merge_requests/$REQ_NUM")
         if [[ $RESPONSE == "[]" ]]; then
             return $ERROR_MR_MISSING
         fi

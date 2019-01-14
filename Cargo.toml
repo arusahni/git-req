@@ -1,0 +1,22 @@
+[package]
+name = "git-req"
+version = "2.0.0"
+authors = ["Aru Sahni <arusahni@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+regex = "0.2"
+reqwest = "0.8.6"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+git2 = "0.7"
+shellexpand = "1.0"
+duct = "0.11.1"
+env_logger = "*"
+log = "0.4.6"
+
+[dependencies.clap]
+version = "~2.31"
+# Cherry-pick the features you'd like to use
+features = [ "color" ]

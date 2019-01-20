@@ -15,8 +15,4 @@ shellexpand = "1.0"
 duct = "0.11.1"
 env_logger = "*"
 log = "0.4.6"
-
-[dependencies.clap]
-version = "~2.31"
-# Cherry-pick the features you'd like to use
-features = [ "color" ]
+clap = "~2.32"

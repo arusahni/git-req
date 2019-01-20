@@ -1,8 +1,8 @@
 use std::str;
-
 use std::path::Path;
 
 use duct::cmd;
+use log::debug;
 use git2::{Config, Repository};
 use shellexpand;
 

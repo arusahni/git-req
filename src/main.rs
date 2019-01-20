@@ -1,22 +1,8 @@
-#[macro_use]
-extern crate log;
-extern crate env_logger;
-#[macro_use]
-extern crate duct;
-extern crate git2;
-extern crate regex;
-extern crate reqwest;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-extern crate serde_json;
-extern crate clap;
-extern crate shellexpand;
-
 mod remotes;
 mod git;
 
 use clap::{App, Arg};
+use log::{debug, info};
 
 fn get_origin() -> String {
     git::get_repo_info("remote.origin.url")

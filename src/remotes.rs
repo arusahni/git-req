@@ -1,12 +1,15 @@
 use std::fmt;
 use std::io::{stdin, stdout, Write};
+use log::{debug,info};
 use regex::Regex;
 use reqwest;
 use reqwest::header::Headers;
+use serde_derive::{Deserialize, Serialize};
+use serde_json;
 use crate::git;
 
 pub trait Remote {
-    fn get_project_id(&mut self) -> &str;
+    fn get_project_id(&mut self) -> Result<&str, &str>;
     fn get_req_branch(&mut self, mr_id: &i64) -> String;
 }
 
@@ -31,8 +34,8 @@ struct GitHub {
 }
 
 impl Remote for GitHub {
-    fn get_project_id(&mut self) -> &str {
-        &self.id
+    fn get_project_id(&mut self) -> Result<&str, &str> {
+        Ok(&self.id)
     }
 
     fn get_req_branch(&mut self, mr_id: &i64) -> String {
@@ -52,11 +55,11 @@ struct GitLab {
 }
 
 impl Remote for GitLab {
-    fn get_project_id(&mut self) -> &str {
+    fn get_project_id(&mut self) -> Result<&str, &str> {
         if self.id.is_empty() {
-            self.id = format!("{}", query_gitlab_project_id(self).unwrap());
+            self.id = format!("{}", query_gitlab_project_id(self)?);
         }
-        &self.id
+        Ok(&self.id)
     }
 
     fn get_req_branch(&mut self, mr_id: &i64) -> String {
@@ -75,7 +78,7 @@ struct GitLabProject {
 
 fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
     let client = reqwest::Client::new();
-    let url = reqwest::Url::parse_with_params(&format!("{}/projects", remote.api_root), &[("search", &remote.name), ("simple", &String::from("true"))]).unwrap();
+    let url = reqwest::Url::parse(&format!("{}/projects/{}%2F{}", remote.api_root, remote.namespace, remote.name)).unwrap();
     let mut headers = Headers::new();
     headers.set_raw("PRIVATE-TOKEN", remote.api_key.to_string());
     debug!("{:?}", headers);
@@ -84,12 +87,12 @@ fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
         .send()
         .expect("failed to send request");
     debug!("Response: {:?}", resp);
-    let buf: Vec<GitLabProject> = resp.json().expect("failed to read response");
-    debug!("{:?}", buf);
-    if buf.len() > 0 {
-        return Ok(buf[0].id);
+    if !resp.status().is_success() {
+        return Err("bad server response");
     }
-    return Err("No match found!");
+    let buf: GitLabProject = resp.json().expect("failed to read response");
+    debug!("{:?}", buf);
+    return Ok(buf.id);
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -146,22 +149,17 @@ fn get_gitlab_project_namespace(origin: &str) -> String {
     String::from(&captures[1])
 }
 
-pub fn get_domain(origin: &str) -> Result<&str, &'static str> {
+pub fn get_domain(origin: &str) -> Result<&str, String> {
     let domain_regex = Regex::new(r"((http[s]?|ssh)://)?(\S+@)?(?P<domain>([^:/])+)").unwrap();
     let captures = domain_regex.captures(origin);
     if captures.is_none() {
-        return Err("invalid remote set")
+        return Err(String::from("invalid remote set"))
     }
     Ok(captures.unwrap().name("domain").map_or("", |x| x.as_str()))
 }
 
-pub fn get_remote(origin: &str) -> Result<Box<Remote>, &'static str> {
-    let domain = match get_domain(origin) {
-        Ok(x) => x,
-        Err(e) => {
-            return Err(e);
-        }
-    };
+pub fn get_remote(origin: &str) -> Result<Box<Remote>, String> {
+    let domain = get_domain(origin)?;
     Ok(match domain {
         "github.com" => Box::new(GitHub {
             id: get_github_project_name(origin),
@@ -196,7 +194,13 @@ pub fn get_remote(origin: &str) -> Result<Box<Remote>, &'static str> {
             let project_id = match load_project_id() {
                 Some(x) => x,
                 None    => {
-                    let project_id_str = remote.get_project_id();
+                    let project_id_str = match remote.get_project_id() {
+                        Ok(id_str) => Ok(id_str),
+                        Err(e) => {
+                            info!("Error getting project ID: {:?}", e);
+                            Err(e)
+                        }
+                    }?;
                     git::set_config("projectid", project_id_str);
                     String::from(project_id_str)
                 }

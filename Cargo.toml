@@ -2,7 +2,15 @@
 name = "git-req"
 version = "2.0.0"
 authors = ["Aru Sahni <arusahni@gmail.com>"]
+description = "Check out merge requests from your GitLab/GitHub hosted repos with ease!"
+homepage = "https://github.com/arusahni/git-req"
+repository = "https://github.com/arusahni/git-req"
+readme = "README.md"
+keywords = ["git", "gitlab", "github"]
+categories = ["command-line-utilities", "development-tools"]
+license = "MIT"
 edition = "2018"
+exclude = ["git-req", "ci/**/*", "appveyor.yml", ".travis.yml"]
 
 [dependencies]
 regex = "0.2"

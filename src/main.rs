@@ -22,7 +22,7 @@ fn checkout_mr(mr_id: i64) {
         ),
     };
     debug!("Found remote: {}", remote);
-    let branch_name = remote.get_req_branch(&mr_id);
+    let branch_name = remote.get_req_branch(mr_id);
     debug!("Got branch name: {}", branch_name);
     match git::checkout_branch(&branch_name) {
         Ok(_) => {
@@ -39,13 +39,12 @@ fn checkout_mr(mr_id: i64) {
 fn main() {
     let _ = env_logger::try_init();
     let matches = App::new("git-req")
-                        .version("0.1")
-                        .author("Aru Sahni <arusahni@gmail.com>")
-                        .about("Switch between merge/pull requests in your GitLab/GitHub repositories with 
-                               just the request ID.")
-                        .arg(Arg::with_name("REQUEST_ID")
-                                .required(true)
-                                .index(1))
-                        .get_matches();
+        .version("0.1")
+        .author("Aru Sahni <arusahni@gmail.com>")
+        .about(
+            "Switch between merge/pull requests in your GitLab/GitHub repositories with just the request ID.",
+        )
+        .arg(Arg::with_name("REQUEST_ID").required(true).index(1))
+        .get_matches();
     checkout_mr(matches.value_of("REQUEST_ID").unwrap().parse().unwrap());
 }

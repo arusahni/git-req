@@ -1,0 +1,26 @@
+[package]
+name = "git-req"
+version = "2.0.0"
+authors = ["Aru Sahni <arusahni@gmail.com>"]
+description = "Check out merge requests from your GitLab/GitHub hosted repos with ease!"
+homepage = "https://github.com/arusahni/git-req"
+repository = "https://github.com/arusahni/git-req"
+readme = "README.md"
+keywords = ["git", "gitlab", "github"]
+categories = ["command-line-utilities", "development-tools"]
+license = "MIT"
+edition = "2018"
+exclude = ["git-req", "ci/**/*", "appveyor.yml", ".travis.yml"]
+
+[dependencies]
+regex = "0.2"
+reqwest = "0.8.6"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+git2 = "0.7"
+shellexpand = "1.0"
+duct = "0.11.1"
+env_logger = "*"
+log = "0.4.6"
+clap = "~2.32"

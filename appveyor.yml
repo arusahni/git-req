@@ -14,8 +14,8 @@ environment:
   # don't need
   matrix:
     # MinGW
-    - TARGET: i686-pc-windows-gnu
-    - TARGET: x86_64-pc-windows-gnu
+    # - TARGET: i686-pc-windows-gnu
+    # - TARGET: x86_64-pc-windows-gnu
 
     # MSVC
     - TARGET: i686-pc-windows-msvc
@@ -47,9 +47,7 @@ test_script:
       cargo build --target %TARGET% &&
       cargo build --target %TARGET% --release &&
       cargo test --target %TARGET% &&
-      cargo test --target %TARGET% --release &&
-      cargo run --target %TARGET% &&
-      cargo run --target %TARGET% --release
+      cargo test --target %TARGET% --release
     )
 
 before_deploy:

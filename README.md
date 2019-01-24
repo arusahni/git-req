@@ -59,3 +59,10 @@ Contributing
 
 Contributions are welcome! I'm down for supporting other services (e.g.
 BitBucket). Just file a PR!
+
+Non-binary Version
+------------------
+
+The last non-binary version of this was v1.0.0. If you don't wish to run (or
+compile) the Rust executable, feel free to use
+[v1.0.0](https://github.com/arusahni/git-req/releases/tag/1.0.0).

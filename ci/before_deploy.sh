@@ -19,7 +19,7 @@ main() {
 
     # TODO Update this to build the artifacts that matter to you
     cross rustc --bin git-req --target $TARGET --release -- -C lto
-
+    ls -l target/$TARGET/release/
     # TODO Update this to package the right artifacts
     cp target/$TARGET/release/git-req $stage/
 

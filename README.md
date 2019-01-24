@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.com/arusahni/git-req.svg?branch=master)](https://travis-ci.com/arusahni/git-req)
+[![Build status](https://ci.appveyor.com/api/projects/status/qs5cwdpsx1pdt4dg?svg=true)](https://ci.appveyor.com/project/arusahni/git-req)
+
 git-req
 =======
 

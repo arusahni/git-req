@@ -163,10 +163,12 @@ fn get_gitlab_project_name(origin: &str) -> String {
 }
 
 /// Extract the project namespace from a GitLab origin URL
-fn get_gitlab_project_namespace(origin: &str) -> String {
+fn get_gitlab_project_namespace(origin: &str) -> Option<String> {
     let project_regex = Regex::new(r".*/(\S+)/\S+\.git$").unwrap();
-    let captures = project_regex.captures(origin).unwrap();
-    String::from(&captures[1])
+    match project_regex.captures(origin) {
+        Some(captures) => Some(String::from(&captures[1])),
+        None => None
+    }
 }
 
 /// Get the domain from an origin URL
@@ -191,11 +193,17 @@ pub fn get_remote(origin: &str) -> Result<Box<Remote>, String> {
         }),
         // For now, if not GitHub, then GitLab
         gitlab_domain => {
+            let namespace = match get_gitlab_project_namespace(origin) {
+                Some(ns) => ns,
+                None => {
+                    return Err(String::from("Could not parse the GitLab project namespace from the origin."));
+                }
+            };
             let mut remote = GitLab {
                 id: String::from(""),
                 domain: String::from(gitlab_domain),
                 name: get_gitlab_project_name(origin),
-                namespace: get_gitlab_project_namespace(origin),
+                namespace: namespace,
                 origin: String::from(origin),
                 api_root: format!("https://{}/api/v4", gitlab_domain),
                 api_key: String::from(""),

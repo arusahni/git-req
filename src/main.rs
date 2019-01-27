@@ -17,10 +17,10 @@ fn checkout_mr(mr_id: i64) {
     let origin = get_origin();
     let mut remote = match remotes::get_remote(&origin) {
         Ok(x) => x,
-        Err(error) => panic!(
-            "There was a problem finding the remote Git repo: {:?}",
-            error
-        ),
+        Err(error) => {
+            eprintln!("There was a problem finding the remote Git repo: {}", &error);
+            process::exit(1);
+        }
     };
     debug!("Found remote: {}", remote);
     let branch_name = remote.get_req_branch(mr_id);
@@ -30,7 +30,7 @@ fn checkout_mr(mr_id: i64) {
             info!("Done!");
         }
         Err(error) => {
-            eprintln!("There was an error checking out the branch: {:?}", &error);
+            eprintln!("There was an error checking out the branch: {}", &error);
             process::exit(1)
         }
     };

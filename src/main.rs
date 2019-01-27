@@ -23,7 +23,13 @@ fn checkout_mr(mr_id: i64) {
         }
     };
     debug!("Found remote: {}", remote);
-    let branch_name = remote.get_req_branch(mr_id);
+    let branch_name = match remote.get_req_branch(mr_id) {
+        Ok(name) => name,
+        Err(error) => {
+            eprintln!("There was a problem ascertaining the branch name: {}", &error);
+            process::exit(1);
+        }
+    };
     debug!("Got branch name: {}", branch_name);
     match git::checkout_branch(&branch_name) {
         Ok(_) => {

@@ -12,7 +12,7 @@ pub trait Remote {
     fn get_project_id(&mut self) -> Result<&str, &str>;
 
     /// Get the branch associated with the merge request having the given ID
-    fn get_req_branch(&mut self, mr_id: i64) -> String;
+    fn get_req_branch(&mut self, mr_id: i64) -> Result<String, &str>;
 }
 
 /// Print a pretty remote
@@ -42,8 +42,8 @@ impl Remote for GitHub {
         Ok(&self.id)
     }
 
-    fn get_req_branch(&mut self, mr_id: i64) -> String {
-        format!("pr/{}", mr_id)
+    fn get_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
+        Ok(format!("pr/{}", mr_id))
     }
 }
 
@@ -66,7 +66,7 @@ impl Remote for GitLab {
         Ok(&self.id)
     }
 
-    fn get_req_branch(&mut self, mr_id: i64) -> String {
+    fn get_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
         query_gitlab_branch_name(self, mr_id)
     }
 }
@@ -128,7 +128,7 @@ fn load_project_id() -> Option<String> {
 }
 
 /// Query the GitLab API for the branch corresponding to the MR
-fn query_gitlab_branch_name(remote: &GitLab, mr_id: i64) -> String {
+fn query_gitlab_branch_name(remote: &GitLab, mr_id: i64) -> Result<String, &str> {
     let client = reqwest::Client::new();
     let url = reqwest::Url::parse(&format!(
         "{}/projects/{}/merge_requests/{}",
@@ -144,8 +144,13 @@ fn query_gitlab_branch_name(remote: &GitLab, mr_id: i64) -> String {
         .send()
         .expect("failed to send request");
     debug!("Response: {:?}", resp);
-    let buf: GitLabMergeRequest = resp.json().expect("failed to read response");
-    buf.source_branch
+    let buf: GitLabMergeRequest = match resp.json() {
+        Ok(buf) => buf,
+        Err(_) => {
+            return Err("failed to read response");
+        }
+    };
+    Ok(buf.source_branch)
 }
 
 /// Extract the project name from a Github origin URL

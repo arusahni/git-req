@@ -2,7 +2,6 @@ use crate::git;
 use log::{debug, info};
 use regex::Regex;
 use reqwest;
-use reqwest::header::Headers;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 use std::io::{stdin, stdout, Write};
@@ -88,12 +87,9 @@ fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
         remote.api_root, remote.namespace, remote.name
     ))
     .unwrap();
-    let mut headers = Headers::new();
-    headers.set_raw("PRIVATE-TOKEN", remote.api_key.to_string());
-    debug!("{:?}", headers);
     let mut resp = client
         .get(url)
-        .headers(headers)
+        .header("PRIVATE-TOKEN", remote.api_key.to_string())
         .send()
         .expect("failed to send request");
     debug!("Response: {:?}", resp);
@@ -135,12 +131,9 @@ fn query_gitlab_branch_name(remote: &GitLab, mr_id: i64) -> Result<String, &str>
         remote.api_root, remote.id, mr_id
     ))
     .unwrap();
-    let mut headers = Headers::new();
-    headers.set_raw("PRIVATE-TOKEN", remote.api_key.to_string());
-    // debug!("{:?}", headers);
     let mut resp = client
         .get(url)
-        .headers(headers)
+        .header("PRIVATE-TOKEN", remote.api_key.to_string())
         .send()
         .expect("failed to send request");
     debug!("Response: {:?}", resp);

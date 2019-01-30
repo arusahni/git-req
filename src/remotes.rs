@@ -1,5 +1,5 @@
 use crate::git;
-use log::{debug, info};
+use log::{debug, info, trace};
 use regex::Regex;
 use reqwest;
 use serde_derive::{Deserialize, Serialize};
@@ -148,6 +148,7 @@ fn query_gitlab_branch_name(remote: &GitLab, mr_id: i64) -> Result<String, &str>
 
 /// Extract the project name from a Github origin URL
 fn get_github_project_name(origin: &str) -> String {
+    trace!("Getting project name for: {}", origin);
     let project_regex = Regex::new(r".*:(.*/\S+)\.git\w*$").unwrap();
     let captures = project_regex.captures(origin).unwrap();
     String::from(&captures[1])
@@ -155,6 +156,7 @@ fn get_github_project_name(origin: &str) -> String {
 
 /// Extract the project name from a GitLab origin URL
 fn get_gitlab_project_name(origin: &str) -> String {
+    trace!("Getting project name for: {}", origin);
     let project_regex = Regex::new(r".*/(\S+)\.git$").unwrap();
     let captures = project_regex.captures(origin).unwrap();
     String::from(&captures[1])
@@ -162,7 +164,8 @@ fn get_gitlab_project_name(origin: &str) -> String {
 
 /// Extract the project namespace from a GitLab origin URL
 fn get_gitlab_project_namespace(origin: &str) -> Option<String> {
-    let project_regex = Regex::new(r".*/(\S+)/\S+\.git$").unwrap();
+    trace!("Getting project namespace for: {}", origin);
+    let project_regex = Regex::new(r".*[/:](\S+)/\S+\.git$").unwrap();
     match project_regex.captures(origin) {
         Some(captures) => Some(String::from(&captures[1])),
         None => None
@@ -215,7 +218,7 @@ pub fn get_remote(origin: &str) -> Result<Box<Remote>, String> {
                     stdin()
                         .read_line(&mut newkey)
                         .expect("Did not input a correct key");
-                    debug!("{}", &newkey);
+                    trace!("New Key: {}", &newkey);
                     git::set_req_config(&domain, "apikey", &newkey.trim());
                     String::from(newkey.trim())
                 }
@@ -241,4 +244,35 @@ pub fn get_remote(origin: &str) -> Result<Box<Remote>, String> {
             Box::new(remote)
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_gitlab_project_namespace_http() {
+        let ns = get_gitlab_project_namespace("https://gitlab.com/my_namespace/my_project.git");
+        assert!(ns.is_some());
+        assert_eq!("my_namespace", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_namespace_git() {
+        let ns = get_gitlab_project_namespace("git@gitlab.com:my_namespace/my_project.git");
+        assert!(ns.is_some());
+        assert_eq!("my_namespace", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_name_http() {
+        let ns = get_gitlab_project_name("https://gitlab.com/my_namespace/my_project.git");
+        assert_eq!("my_project", ns);
+    }
+
+    #[test]
+    fn test_get_gitlab_project_name_git() {
+        let ns = get_gitlab_project_name("git@gitlab.com:my_namespace/my_project.git");
+        assert_eq!("my_project", ns);
+    }
 }

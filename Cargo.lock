@@ -278,7 +278,7 @@ dependencies = [
 
 [[package]]
 name = "git-req"
-version = "2.0.0-rc.2"
+version = "2.0.0-rc.3"
 dependencies = [
  "clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "duct 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",

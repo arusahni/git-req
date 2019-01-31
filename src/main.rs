@@ -6,6 +6,8 @@ use clap::{App, Arg};
 use log::{debug, info};
 use std::process;
 
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 /// Get the `origin` remote
 fn get_origin() -> String {
     git::get_repo_info("remote.origin.url")
@@ -46,7 +48,7 @@ fn checkout_mr(mr_id: i64) {
 fn main() {
     let _ = env_logger::try_init();
     let matches = App::new("git-req")
-        .version("0.1")
+        .version(VERSION)
         .author("Aru Sahni <arusahni@gmail.com>")
         .about(
             "Switch between merge/pull requests in your GitLab/GitHub repositories with just the request ID.",

@@ -81,6 +81,7 @@ struct GitLabProject {
 
 /// Query the GitLab API for remote's project
 fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
+    trace!("Querying GitLab API for {:?}", remote);
     let client = reqwest::Client::new();
     let url = reqwest::Url::parse(&format!(
         "{}/projects/{}%2F{}",
@@ -92,9 +93,11 @@ fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
         .header("PRIVATE-TOKEN", remote.api_key.to_string())
         .send()
         .expect("failed to send request");
-    debug!("Response: {:?}", resp);
+    debug!("Project ID query response: {:?}", resp);
     if !resp.status().is_success() {
-        return Err("bad server response");
+        return Err("Unable to get the project ID from the GitLab API.\nFind and configure \
+                   your project ID using the instructions at: \
+                   https://github.com/arusahni/git-req/wiki/Finding-Project-IDs");
     }
     let buf: GitLabProject = resp.json().expect("failed to read response");
     debug!("{:?}", buf);

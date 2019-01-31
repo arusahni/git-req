@@ -3,7 +3,7 @@ mod git;
 mod remotes;
 
 use clap::{App, Arg};
-use log::{debug, info};
+use log::{debug, info, trace};
 use std::process;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -44,6 +44,13 @@ fn checkout_mr(mr_id: i64) {
     };
 }
 
+// Set the project ID
+fn set_project_id(new_id: &str) {
+    trace!("Setting project ID: {}", new_id);
+    git::set_config("projectid", new_id);
+    eprintln!("New project ID set!");
+}
+
 /// Do the thing
 fn main() {
     let _ = env_logger::try_init();
@@ -53,7 +60,21 @@ fn main() {
         .about(
             "Switch between merge/pull requests in your GitLab/GitHub repositories with just the request ID.",
         )
-        .arg(Arg::with_name("REQUEST_ID").required(true).index(1))
+        .arg(Arg::with_name("NEW_PROJECT_ID")
+             .long("set-project-id")
+             .value_name("PROJECT_ID")
+             .help("A project ID for the current repository")
+             .required(false)
+             .takes_value(true)
+             .conflicts_with("REQUEST_ID"))
+        .arg(Arg::with_name("REQUEST_ID")
+             .required(true)
+             .conflicts_with("NEW_PROJECT_ID")
+             .index(1))
         .get_matches();
-    checkout_mr(matches.value_of("REQUEST_ID").unwrap().parse().unwrap());
+    if let Some(project_id) = matches.value_of("NEW_PROJECT_ID") {
+        set_project_id(project_id);
+    } else {
+        checkout_mr(matches.value_of("REQUEST_ID").unwrap().parse().unwrap());
+    }
 }

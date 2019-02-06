@@ -134,6 +134,7 @@ fn search_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
         return Err("Couldn't find namespace");
     }
     let ns_buf: GitLabNamespace = resp.json().expect("failed to read response");
+    debug!("Querying namespace {:?}", ns_buf);
     let url = match ns_buf.kind.as_ref() {
         "user" => reqwest::Url::parse(&format!("{}/users/{}/projects", remote.api_root, ns_buf.id)).unwrap(),
         "group" => reqwest::Url::parse(&format!("{}/groups/{}/projects?search={}", remote.api_root, ns_buf.id, remote.name)).unwrap(),
@@ -143,6 +144,7 @@ fn search_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
         }
     };
     let mut resp = query_gitlab_api(url, remote.api_key.to_string());
+    debug!("Project ID query response: {:?}", resp);
     let projects: Vec<GitLabProject> = resp.json().expect("failed to read projects response");
     match projects.iter().find(|&prj| prj.name == remote.name) {
         Some(project) => Ok(project.id),

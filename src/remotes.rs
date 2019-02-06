@@ -1,5 +1,5 @@
 use crate::git;
-use log::{debug, info, trace};
+use log::{debug, error, info, trace};
 use regex::Regex;
 use reqwest;
 use serde_derive::{Deserialize, Serialize};
@@ -79,29 +79,75 @@ struct GitLabProject {
     path_with_namespace: String,
 }
 
+fn query_gitlab_api(url: reqwest::Url, token: String) -> reqwest::Response {
+    let client = reqwest::Client::new();
+    client
+        .get(url)
+        .header("PRIVATE-TOKEN", token)
+        .send()
+        .expect("failed to send request")
+}
+
 /// Query the GitLab API for remote's project
 fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
     trace!("Querying GitLab API for {:?}", remote);
-    let client = reqwest::Client::new();
     let url = reqwest::Url::parse(&format!(
         "{}/projects/{}%2F{}",
         remote.api_root, remote.namespace, remote.name
     ))
     .unwrap();
-    let mut resp = client
-        .get(url)
-        .header("PRIVATE-TOKEN", remote.api_key.to_string())
-        .send()
-        .expect("failed to send request");
+    let mut resp = query_gitlab_api(url, remote.api_key.to_string());
     debug!("Project ID query response: {:?}", resp);
     if !resp.status().is_success() {
-        return Err("Unable to get the project ID from the GitLab API.\nFind and configure \
+        match search_gitlab_project_id(remote) {
+            Ok(id) => {
+                return Ok(id);
+            },
+            Err(_) => {
+                return Err("Unable to get the project ID from the GitLab API.\nFind and configure \
                    your project ID using the instructions at: \
                    https://github.com/arusahni/git-req/wiki/Finding-Project-IDs");
+            }
+        }
     }
     let buf: GitLabProject = resp.json().expect("failed to read response");
     debug!("{:?}", buf);
     Ok(buf.id)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct GitLabNamespace {
+    id: i64,
+    name: String,
+    path: String,
+    kind: String,
+    full_path: String,
+}
+
+/// Search GitLab for the project ID (if the direct lookup didn't work)
+fn search_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
+    trace!("Searching GitLab API for namespace {:?} by project name", remote.namespace);
+    let url = reqwest::Url::parse(&format!("{}/namespaces/{}", remote.api_root, remote.namespace)).unwrap();
+    let mut resp = query_gitlab_api(url, remote.api_key.to_string());
+    debug!("Namespace ID query response: {:?}", resp);
+    if !resp.status().is_success() {
+        return Err("Couldn't find namespace");
+    }
+    let ns_buf: GitLabNamespace = resp.json().expect("failed to read response");
+    let url = match ns_buf.kind.as_ref() {
+        "user" => reqwest::Url::parse(&format!("{}/users/{}/projects", remote.api_root, ns_buf.id)).unwrap(),
+        "group" => reqwest::Url::parse(&format!("{}/groups/{}/projects?search={}", remote.api_root, ns_buf.id, remote.name)).unwrap(),
+        _ => {
+            error!("Unknown namespace kind {:?}", ns_buf.kind);
+            return Err("Unknown namespace");
+        }
+    };
+    let mut resp = query_gitlab_api(url, remote.api_key.to_string());
+    let projects: Vec<GitLabProject> = resp.json().expect("failed to read projects response");
+    match projects.iter().find(|&prj| prj.name == remote.name) {
+        Some(project) => Ok(project.id),
+        None => Err("Couldn't find project"),
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -207,7 +253,7 @@ pub fn get_remote(origin: &str) -> Result<Box<Remote>, String> {
                 id: String::from(""),
                 domain: String::from(gitlab_domain),
                 name: get_gitlab_project_name(origin),
-                namespace: namespace,
+                namespace,
                 origin: String::from(origin),
                 api_root: format!("https://{}/api/v4", gitlab_domain),
                 api_key: String::from(""),

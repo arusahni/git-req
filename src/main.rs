@@ -6,7 +6,7 @@ use clap::{App, Arg};
 use log::{debug, info, trace};
 use std::process;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Get the `origin` remote
 fn get_origin() -> String {

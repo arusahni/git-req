@@ -73,7 +73,7 @@ impl Remote for GitLab {
 #[derive(Serialize, Deserialize, Debug)]
 struct GitLabProject {
     id: i64,
-    description: String,
+    description: Option<String>,
     name: String,
     path: String,
     path_with_namespace: String,

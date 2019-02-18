@@ -15,8 +15,7 @@ Why?
 *aru switches to a browser, navigates to his org's GitLab instance, finds the
 project, clicks to the merge requests view, finds the MR, reads the branch name
 (`hotfix/jrdevs_new_branch`), switches back to the terminal, inputs `git
-checkout hotfix/jrdevs_new_branch` (no typos!), and starts jamming on some
-code.*
+checkout hotfix/jrdevs_new_branch` (no typos!), and starts reviewing.*
 
 ---
 
@@ -58,12 +57,14 @@ If you change your upstream remote, you may have to edit this property.
 Contributing
 ------------
 
-Contributions are welcome! I'm down for supporting other services (e.g.
-BitBucket). Just file a PR!
+Contributions are welcome! I'm especially looking for:
+
+    * Supporting other services (e.g.  BitBucket).
+    * Rust code reviews. This is my first non-trivial Rust project, so I'd love to be corrected on best practices and patterns.
 
 Non-binary Version
 ------------------
 
 The last non-binary version of this was v1.0.0. If you don't wish to run (or
-compile) the Rust executable, feel free to use
-[v1.0.0](https://github.com/arusahni/git-req/releases/tag/1.0.0).
+compile) the Rust executable, [feel free to use
+it](https://github.com/arusahni/git-req/releases/tag/1.0.0).

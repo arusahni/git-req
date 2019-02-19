@@ -59,8 +59,8 @@ Contributing
 
 Contributions are welcome! I'm especially looking for:
 
-    * Supporting other services (e.g.  BitBucket).
-    * Rust code reviews. This is my first non-trivial Rust project, so I'd love to be corrected on best practices and patterns.
+* Supporting other services (e.g.  BitBucket).
+* Rust code reviews. This is my first non-trivial Rust project, so I'd love to be corrected on best practices and patterns.
 
 Non-binary Version
 ------------------

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://unpkg.com/bulmaswatch/lumen/bulmaswatch.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.4/css/bulma.min.css">
     <style>
 .title pre {
     line-height: 0.25;
@@ -37,17 +37,17 @@
     <section class="section">
         <div class="container content">
             <h2 class="subtitle">Check out branches by their pull (or merge) request ID</h2>
-            <p>Don't waste time doing any or all of this:
+            <p>Don't waste time doing this:
                 <ul>
                     <li>Switching to a browser</li>
-                    <li>Navigating to the repository</li>
+                    <li>Navigating to the version control service</li>
                     <li>Finding the project</li>
                     <li>Navigating to the the merge/pull request page</li>
                     <li>Copying a long branch name and clobbering your clipboard</li>
                     <li>Typing out an overly-verbose branch name</li>
                 </ul>
             </p>
-            <p>Just run <code>git req REQUEST_NUMBER</code> to check out the corresponding branch.</p>
+            <p>Instead, run <code>git req REQUEST_NUMBER</code> to check out the corresponding branch.</p>
             <h2 class="subtitle">Supported services</h2>
             <ul>
                 <li>GitHub</li>
@@ -63,9 +63,16 @@
                         <li>macOS: suggested location <code>/usr/local/bin/</code>. This may not exist, so it'll need to be created with <code>mkdir -p /usr/local/bin</code>.</li>
                     </ul>
                 </li>
-                <li>That's it! The first time you run <code>git req REQUEST_NUMBER</code> it will prompt you your API credentials if necessary.</li>
+                <li>That's it! The first time you run <code>git req REQUEST_NUMBER</code>, it will prompt you your API credentials if necessary.</li>
             </ol>
+            <h2 class="subtitle">Questions? Issues?</h2>
+            If you have questions, ask on GitHub, or on <a href="https://twitter.com/IAmAru">Twitter</a>. Please file issues on the <a href="https://github.com/arusahni/git-req/issues">GitHub project</a>.
         </div>
     </section>
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <strong>git-req</strong> by <a href="https://arusahni.net" rel="author">Aru Sahni</a> (<a href="https://twitter.com/IAmAru" rel="author">🐦</a>). Available under the <a href="http://opensource.org/licenses/mit-license.php" rel="license">MIT license</a>.
+        </div>
+    </footer>
 </body>
 </html>

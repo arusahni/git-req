@@ -32,10 +32,13 @@ That's exactly what `git-req` does.
 Installation
 ------------
 
-Simply place the `git-req` executable somewhere in your `$PATH`. The first time
-you run `git req <#>` it will prompt you for API credentials; use a Personal
-Access Token (see Profile Settings > Personal Access Token in GitLab or
-GitHub).
+1. [Download the binary for your operating system from the release page](https://github.com/arusahni/git-req/releases/latest).
+2. Decompress the archive.
+3. Place the `git-req` executable somewhere in your `$PATH`.
+
+The first time you run `git req <#>` it will prompt you for API credentials;
+use a Personal Access Token (see Profile Settings > Personal Access Token in
+GitLab or GitHub).
 
 Configuration
 -------------
@@ -53,6 +56,8 @@ stored here.  Edit this if you have to use a new key or remove a bad one.
 
 Internal GitHub/GitLab project IDs are cached here under the `[req]` block.
 If you change your upstream remote, you may have to edit this property.
+
+The project ID stored here can be edited with `git req --set-project-id PROJECT_ID`.
 
 Contributing
 ------------

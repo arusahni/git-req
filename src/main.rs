@@ -2,11 +2,9 @@
 mod git;
 mod remotes;
 
-use clap::{App, Arg};
+use clap::{App, Arg, crate_authors, crate_version};
 use log::{debug, info, trace};
 use std::process;
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Get the `origin` remote
 fn get_origin() -> String {
@@ -44,7 +42,7 @@ fn checkout_mr(mr_id: i64) {
     };
 }
 
-// Set the project ID
+/// Set the project ID
 fn set_project_id(new_id: &str) {
     trace!("Setting project ID: {}", new_id);
     git::set_config("projectid", new_id);
@@ -55,10 +53,11 @@ fn set_project_id(new_id: &str) {
 fn main() {
     let _ = env_logger::try_init();
     let matches = App::new("git-req")
-        .version(VERSION)
-        .author("Aru Sahni <arusahni@gmail.com>")
+        .bin_name("git req")
+        .author(crate_authors!("\n"))
+        .version(crate_version!())
         .about(
-            "Switch between merge/pull requests in your GitLab/GitHub repositories with just the request ID.",
+            "Switch between merge/pull requests in your GitLab and GitHub repositories with just the request ID.",
         )
         .arg(Arg::with_name("NEW_PROJECT_ID")
              .long("set-project-id")

@@ -12,6 +12,9 @@ pub trait Remote {
 
     /// Get the branch associated with the merge request having the given ID
     fn get_req_branch(&mut self, mr_id: i64) -> Result<String, &str>;
+
+    /// Get the names of the merge/pull requests opened against the remote
+    fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str>;
 }
 
 /// Print a pretty remote
@@ -26,6 +29,14 @@ impl fmt::Debug for Remote {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MergeRequest {
+    pub id: i64,
+    pub title: String,
+    pub description: Option<String>,
+    pub source_branch: String,
 }
 
 #[derive(Debug)]
@@ -43,6 +54,10 @@ impl Remote for GitHub {
 
     fn get_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
         Ok(format!("pr/{}", mr_id))
+    }
+
+    fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str> {
+        Err("Not implemented!")
     }
 }
 
@@ -68,6 +83,10 @@ impl Remote for GitLab {
     fn get_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
         query_gitlab_branch_name(self, mr_id)
     }
+
+    fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str> {
+        retrieve_gitlab_project_merge_requests(self)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -90,7 +109,7 @@ fn query_gitlab_api(url: reqwest::Url, token: String) -> reqwest::Response {
 
 /// Query the GitLab API for remote's project
 fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
-    trace!("Querying GitLab API for {:?}", remote);
+    trace!("Querying GitLab Project API for {:?}", remote);
     let url = reqwest::Url::parse(&format!(
         "{}/projects/{}%2F{}",
         remote.api_root, remote.namespace, remote.name
@@ -102,17 +121,48 @@ fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
         match search_gitlab_project_id(remote) {
             Ok(id) => {
                 return Ok(id);
-            },
+            }
             Err(_) => {
-                return Err("Unable to get the project ID from the GitLab API.\nFind and configure \
-                   your project ID using the instructions at: \
-                   https://github.com/arusahni/git-req/wiki/Finding-Project-IDs");
+                return Err(
+                    "Unable to get the project ID from the GitLab API.\nFind and configure \
+                     your project ID using the instructions at: \
+                     https://github.com/arusahni/git-req/wiki/Finding-Project-IDs",
+                );
             }
         }
     }
     let buf: GitLabProject = resp.json().expect("failed to read response");
     debug!("{:?}", buf);
     Ok(buf.id)
+}
+
+fn gitlab_to_mr(req: GitLabMergeRequest) -> MergeRequest {
+    MergeRequest {
+        id: req.iid,
+        title: req.title,
+        description: req.description,
+        source_branch: req.source_branch,
+    }
+}
+
+fn retrieve_gitlab_project_merge_requests(
+    remote: &GitLab,
+) -> Result<Vec<MergeRequest>, &'static str> {
+    trace!("Querying GitLab MR for {:?}", remote);
+    let url = reqwest::Url::parse(&format!(
+        "{}/projects/{}/merge_requests?state=opened",
+        remote.api_root, remote.id
+    ))
+    .unwrap();
+    let mut resp = query_gitlab_api(url, remote.api_key.to_string());
+    debug!("MR list query response: {:?}", resp);
+    let buf: Vec<GitLabMergeRequest> = match resp.json() {
+        Ok(buf) => buf,
+        Err(_) => {
+            return Err("failed to read response");
+        }
+    };
+    Ok(buf.into_iter().map(gitlab_to_mr).collect())
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -126,8 +176,15 @@ struct GitLabNamespace {
 
 /// Search GitLab for the project ID (if the direct lookup didn't work)
 fn search_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
-    trace!("Searching GitLab API for namespace {:?} by project name", remote.namespace);
-    let url = reqwest::Url::parse(&format!("{}/namespaces/{}", remote.api_root, remote.namespace)).unwrap();
+    trace!(
+        "Searching GitLab API for namespace {:?} by project name",
+        remote.namespace
+    );
+    let url = reqwest::Url::parse(&format!(
+        "{}/namespaces/{}",
+        remote.api_root, remote.namespace
+    ))
+    .unwrap();
     let mut resp = query_gitlab_api(url, remote.api_key.to_string());
     debug!("Namespace ID query response: {:?}", resp);
     if !resp.status().is_success() {
@@ -136,8 +193,13 @@ fn search_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
     let ns_buf: GitLabNamespace = resp.json().expect("failed to read response");
     debug!("Querying namespace {:?}", ns_buf);
     let url = match ns_buf.kind.as_ref() {
-        "user" => reqwest::Url::parse(&format!("{}/users/{}/projects", remote.api_root, ns_buf.id)).unwrap(),
-        "group" => reqwest::Url::parse(&format!("{}/groups/{}/projects?search={}", remote.api_root, ns_buf.id, remote.name)).unwrap(),
+        "user" => reqwest::Url::parse(&format!("{}/users/{}/projects", remote.api_root, ns_buf.id))
+            .unwrap(),
+        "group" => reqwest::Url::parse(&format!(
+            "{}/groups/{}/projects?search={}",
+            remote.api_root, ns_buf.id, remote.name
+        ))
+        .unwrap(),
         _ => {
             error!("Unknown namespace kind {:?}", ns_buf.kind);
             return Err("Unknown namespace");
@@ -157,6 +219,7 @@ struct GitLabMergeRequest {
     id: i64,
     iid: i64,
     title: String,
+    description: Option<String>,
     target_branch: String,
     source_branch: String,
     sha: String,
@@ -219,7 +282,7 @@ fn get_gitlab_project_namespace(origin: &str) -> Option<String> {
     let project_regex = Regex::new(r".*[/:](\S+)/\S+\.git$").unwrap();
     match project_regex.captures(origin) {
         Some(captures) => Some(String::from(&captures[1])),
-        None => None
+        None => None,
     }
 }
 
@@ -248,7 +311,9 @@ pub fn get_remote(origin: &str) -> Result<Box<Remote>, String> {
             let namespace = match get_gitlab_project_namespace(origin) {
                 Some(ns) => ns,
                 None => {
-                    return Err(String::from("Could not parse the GitLab project namespace from the origin."));
+                    return Err(String::from(
+                        "Could not parse the GitLab project namespace from the origin.",
+                    ));
                 }
             };
             let mut remote = GitLab {

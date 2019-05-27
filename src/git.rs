@@ -2,7 +2,7 @@ use std::path::Path;
 use std::str;
 
 use duct::cmd;
-use git2::{Config, Repository};
+use git2::{Config, Error, Repository};
 use log::debug;
 use shellexpand;
 
@@ -15,17 +15,16 @@ pub fn get_remote_url(remote: &str) -> String {
 }
 
 /// Get a value fom the repository config
-pub fn get_repo_info(repo_field: &str) -> String {
+pub fn get_repo_info(repo_field: &str) -> Result<String, Error> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     let cfg = repo.config().unwrap();
-    cfg.get_string(repo_field).unwrap()
+    cfg.get_string(repo_field)
 }
 
 /// Get a value for the given project-local git-req config
 pub fn get_config(field_name: &str) -> Option<String> {
-    let repo = Repository::open_from_env().expect("Couldn't find repository");
-    let cfg = repo.config().unwrap();
-    match cfg.get_string(&format!("req.{}", field_name)) {
+    let key = format!("req.{}", field_name);
+    match get_repo_info(&key) {
         Ok(val) => Some(val),
         Err(_) => None,
     }

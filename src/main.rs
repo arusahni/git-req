@@ -8,7 +8,7 @@ use std::process;
 
 /// Get the `origin` remote
 fn get_origin() -> String {
-    git::get_repo_info("remote.origin.url")
+    git::get_remote_url("origin")
 }
 
 /// Check out the branch corresponding to the MR ID

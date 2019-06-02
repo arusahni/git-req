@@ -10,8 +10,11 @@ fn slugify_domain(domain: &str) -> String {
     str::replace(domain, ".", "|")
 }
 
+/// Get the URL of the given remote
 pub fn get_remote_url(remote: &str) -> String {
-    cmd!("git", "remote", "get-url", remote).read().unwrap()
+    let repo = Repository::open_from_env().expect("Couldn't find repository");
+    let remote = repo.find_remote(remote).unwrap();
+    String::from(remote.url().unwrap())
 }
 
 /// Get a value fom the repository config

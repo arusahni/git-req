@@ -5,6 +5,8 @@ mod remotes;
 use clap::{crate_authors, crate_version, App, Arg};
 use log::{debug, info, trace};
 use std::process;
+use std::io::{self, Write};
+use tabwriter::TabWriter;
 
 /// Get the `origin` remote
 fn get_origin() -> String {
@@ -71,9 +73,11 @@ fn list_open_requests() {
     let mut remote = get_remote_hard();
     debug!("Found remote: {}", remote);
     let mrs = remote.get_req_names().unwrap();
+    let mut tw = TabWriter::new(io::stdout()).padding(2);
     for mr in &mrs {
-        println!("{}: {} - {}", mr.id, mr.title, mr.source_branch);
+        writeln!(&mut tw, "{}\t{}\t{}", mr.id, mr.source_branch, mr.title).unwrap();
     }
+    tw.flush().unwrap();
 }
 
 /// Do the thing

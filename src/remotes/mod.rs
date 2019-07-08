@@ -51,6 +51,7 @@ pub fn get_domain(origin: &str) -> Result<&str, String> {
     Ok(captures.unwrap().name("domain").map_or("", |x| x.as_str()))
 }
 
+/// Get the API key for the given domain. If absent, prompt.
 fn get_api_key(domain: &str) -> String {
     match git::get_req_config(&domain, "apikey") {
         Some(key) => key,

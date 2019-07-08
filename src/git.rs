@@ -6,6 +6,7 @@ use git2::{Config, Error, Repository};
 use log::debug;
 use shellexpand;
 
+/// Convert a domain string into a configuration slug
 fn slugify_domain(domain: &str) -> String {
     str::replace(domain, ".", "|")
 }

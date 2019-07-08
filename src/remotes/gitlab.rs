@@ -63,6 +63,7 @@ impl Remote for GitLab {
     }
 }
 
+/// Query the GitLab API
 fn query_gitlab_api(url: reqwest::Url, token: String) -> reqwest::Response {
     let client = reqwest::Client::new();
     client
@@ -101,6 +102,7 @@ fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
     Ok(buf.id)
 }
 
+/// Convert a GitLab MR to a git-req MR
 fn gitlab_to_mr(req: GitLabMergeRequest) -> MergeRequest {
     MergeRequest {
         id: req.iid,
@@ -110,6 +112,7 @@ fn gitlab_to_mr(req: GitLabMergeRequest) -> MergeRequest {
     }
 }
 
+/// Get the list of merge requests for the current project
 fn retrieve_gitlab_project_merge_requests(
     remote: &GitLab,
 ) -> Result<Vec<MergeRequest>, &'static str> {

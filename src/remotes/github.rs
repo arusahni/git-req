@@ -36,6 +36,7 @@ impl Remote for GitHub {
     }
 }
 
+/// Convert a GitHub PR to a git-req MergeRequest
 fn github_to_mr(req: GitHubPullRequest) -> MergeRequest {
     MergeRequest {
         id: req.number,
@@ -45,6 +46,7 @@ fn github_to_mr(req: GitHubPullRequest) -> MergeRequest {
     }
 }
 
+/// Query the GitHub API
 fn query_github_api(url: reqwest::Url, token: String) -> reqwest::Response {
     let client = reqwest::Client::new();
     client
@@ -54,6 +56,7 @@ fn query_github_api(url: reqwest::Url, token: String) -> reqwest::Response {
         .expect("failed to send request")
 }
 
+/// Get the pull requests for the current project
 fn retrieve_github_project_pull_requests(
     remote: &GitHub,
 ) -> Result<Vec<MergeRequest>, &'static str> {

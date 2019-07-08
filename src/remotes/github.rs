@@ -80,3 +80,14 @@ pub fn get_github_project_name(origin: &str) -> String {
     let captures = project_regex.captures(origin).unwrap();
     String::from(&captures[1])
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_github_project_name() {
+        let name = get_github_project_name("git@github.com:my_org/my_project.git");
+        assert_eq!("my_org/my_project", name);
+    }
+}

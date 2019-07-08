@@ -45,6 +45,7 @@ struct GitHub {
     name: String,
     origin: String,
     api_root: String,
+    api_key: String,
 }
 
 impl Remote for GitHub {
@@ -57,7 +58,7 @@ impl Remote for GitHub {
     }
 
     fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str> {
-        Err("Not implemented!")
+        retrieve_github_project_pull_requests(self)
     }
 }
 
@@ -87,6 +88,15 @@ impl Remote for GitLab {
     fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str> {
         retrieve_gitlab_project_merge_requests(self)
     }
+}
+
+fn query_github_api(url: reqwest::Url, token: String) -> reqwest::Response {
+    let client = reqwest::Client::new();
+    client
+        .get(url)
+        .header("Authorization", format!("token {}", token))
+        .send()
+        .expect("failed to send request")
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -143,6 +153,31 @@ fn gitlab_to_mr(req: GitLabMergeRequest) -> MergeRequest {
         description: req.description,
         source_branch: req.source_branch,
     }
+}
+
+fn github_to_mr(req: GitHubPullRequest) -> MergeRequest {
+    MergeRequest {
+        id: req.number,
+        title: req.title,
+        description: req.body,
+        source_branch: format!("pr/{}", req.number),
+    }
+}
+
+fn retrieve_github_project_pull_requests(
+    remote: &GitHub,
+) -> Result<Vec<MergeRequest>, &'static str> {
+    trace!("Querying for GitHub PR for {:?}", remote);
+    let url = reqwest::Url::parse(&format!("{}/{}/pulls", remote.api_root, remote.id)).unwrap();
+    let mut resp = query_github_api(url, remote.api_key.to_string());
+    debug!("PR list query response: {:?}", resp);
+    let buf: Vec<GitHubPullRequest> = match resp.json() {
+        Ok(buf) => buf,
+        Err(_) => {
+            return Err("failed to read API response");
+        }
+    };
+    Ok(buf.into_iter().map(github_to_mr).collect())
 }
 
 fn retrieve_gitlab_project_merge_requests(
@@ -212,6 +247,15 @@ fn search_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
         Some(project) => Ok(project.id),
         None => Err("Couldn't find project"),
     }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct GitHubPullRequest {
+    id: i64,
+    number: i64,
+    title: String,
+    body: Option<String>,
+    html_url: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -296,16 +340,41 @@ pub fn get_domain(origin: &str) -> Result<&str, String> {
     Ok(captures.unwrap().name("domain").map_or("", |x| x.as_str()))
 }
 
+fn get_api_key(domain: &str) -> String {
+    match git::get_req_config(&domain, "apikey") {
+        Some(key) => key,
+        None => {
+            let mut newkey = String::new();
+            println!("No API token for {} found. See https://github.com/arusahni/git-req/wiki/API-Keys for instructions.", domain);
+            print!("{} API token: ", domain);
+            let _ = stdout().flush();
+            stdin()
+                .read_line(&mut newkey)
+                .expect("Did not input a correct key");
+            trace!("New Key: {}", &newkey);
+            git::set_req_config(&domain, "apikey", &newkey.trim());
+            String::from(newkey.trim())
+        }
+    }
+}
+
 /// Get a remote struct from an origin URL
 pub fn get_remote(origin: &str) -> Result<Box<Remote>, String> {
     let domain = get_domain(origin)?;
     Ok(match domain {
-        "github.com" => Box::new(GitHub {
-            id: get_github_project_name(origin),
-            name: get_github_project_name(origin),
-            origin: String::from(origin),
-            api_root: String::from("https://api.github.com/repos"),
-        }),
+        "github.com" => {
+            let mut remote = GitHub {
+                id: get_github_project_name(origin),
+                name: get_github_project_name(origin),
+                origin: String::from(origin),
+                api_root: String::from("https://api.github.com/repos"),
+                api_key: String::from(""),
+            };
+            let apikey = get_api_key("github.com");
+            info!("API Key: {}", &apikey);
+            remote.api_key = apikey;
+            Box::new(remote)
+        }
         // For now, if not GitHub, then GitLab
         gitlab_domain => {
             let namespace = match get_gitlab_project_namespace(origin) {
@@ -325,20 +394,7 @@ pub fn get_remote(origin: &str) -> Result<Box<Remote>, String> {
                 api_root: format!("https://{}/api/v4", gitlab_domain),
                 api_key: String::from(""),
             };
-            let apikey = match git::get_req_config(&domain, "apikey") {
-                Some(key) => key,
-                None => {
-                    let mut newkey = String::new();
-                    print!("Please enter the read-only API key for {}: ", gitlab_domain);
-                    let _ = stdout().flush();
-                    stdin()
-                        .read_line(&mut newkey)
-                        .expect("Did not input a correct key");
-                    trace!("New Key: {}", &newkey);
-                    git::set_req_config(&domain, "apikey", &newkey.trim());
-                    String::from(newkey.trim())
-                }
-            };
+            let apikey = get_api_key(&domain);
             info!("API Key: {}", &apikey);
             remote.api_key = apikey;
             let project_id = match load_project_id() {

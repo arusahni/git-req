@@ -34,6 +34,10 @@ impl Remote for GitHub {
     fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str> {
         retrieve_github_project_pull_requests(self)
     }
+
+    fn has_useful_branch_names(&mut self) -> bool {
+        false
+    }
 }
 
 /// Convert a GitHub PR to a git-req MergeRequest

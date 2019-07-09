@@ -75,7 +75,11 @@ fn list_open_requests() {
     let mrs = remote.get_req_names().unwrap();
     let mut tw = TabWriter::new(io::stdout()).padding(4);
     for mr in &mrs {
-        writeln!(&mut tw, "{}\t{}\t{}", mr.id, mr.source_branch, mr.title).unwrap();
+        if remote.has_useful_branch_names() {
+            writeln!(&mut tw, "{}\t{}\t{}",  mr.id, mr.source_branch, mr.title).unwrap();
+        } else {
+            writeln!(&mut tw, "{}\t{}",  mr.id, mr.title).unwrap();
+        }
     }
     tw.flush().unwrap();
 }

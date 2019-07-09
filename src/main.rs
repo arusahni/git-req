@@ -96,6 +96,7 @@ fn main() {
         )
         .arg(Arg::with_name("LIST_MR")
              .long("list")
+             .short("l")
              .help("List all open requests against the repository")
              .takes_value(false)
              .required(false)

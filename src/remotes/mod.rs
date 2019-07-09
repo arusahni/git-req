@@ -8,6 +8,14 @@ use std::io::{stdin, stdout, Write};
 pub mod github;
 pub mod gitlab;
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MergeRequest {
+    pub id: i64,
+    pub title: String,
+    pub description: Option<String>,
+    pub source_branch: String,
+}
+
 pub trait Remote {
     /// Get the ID of the project associated with the repository
     fn get_project_id(&mut self) -> Result<&str, &str>;
@@ -17,6 +25,9 @@ pub trait Remote {
 
     /// Get the names of the merge/pull requests opened against the remote
     fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str>;
+
+    /// Determine if the branch names are useful to display
+    fn has_useful_branch_names(&mut self) -> bool;
 }
 
 /// Print a pretty remote
@@ -31,14 +42,6 @@ impl fmt::Debug for Remote {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct MergeRequest {
-    pub id: i64,
-    pub title: String,
-    pub description: Option<String>,
-    pub source_branch: String,
 }
 
 /// Get the domain from an origin URL

@@ -61,6 +61,10 @@ impl Remote for GitLab {
     fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str> {
         retrieve_gitlab_project_merge_requests(self)
     }
+
+    fn has_useful_branch_names(&mut self) -> bool {
+        true
+    }
 }
 
 /// Query the GitLab API

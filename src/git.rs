@@ -41,6 +41,13 @@ pub fn set_config(field_name: &str, value: &str) {
     cfg.set_str(&format!("req.{}", field_name), value).unwrap();
 }
 
+/// Delete the entry for the project-local git-req config field with the provided name
+pub fn delete_config(field_name: &str) {
+    let repo = Repository::open_from_env().expect("Couldn't find repository");
+    let mut cfg = repo.config().unwrap();
+    cfg.remove(&format!("req.{}", field_name)).unwrap();
+}
+
 /// Get a value for the given global git-req config
 pub fn get_req_config(domain: &str, field: &str) -> Option<String> {
     let slug = slugify_domain(domain);

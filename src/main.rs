@@ -60,6 +60,13 @@ fn checkout_mr(mr_id: i64) {
     };
 }
 
+/// Delete the project ID entry
+fn clear_project_id() {
+    trace!("Deleting project ID");
+    git::delete_config("projectid");
+    eprintln!("Project ID cleared!");
+}
+
 /// Set the project ID
 fn set_project_id(new_id: &str) {
     trace!("Setting project ID: {}", new_id);
@@ -100,21 +107,29 @@ fn main() {
              .help("List all open requests against the repository")
              .takes_value(false)
              .required(false)
-             .conflicts_with_all(&["NEW_PROJECT_ID", "REQUEST_ID"]))
+             .conflicts_with_all(&["CLEAR_PROJECT_ID", "NEW_PROJECT_ID", "REQUEST_ID"]))
         .arg(Arg::with_name("NEW_PROJECT_ID")
              .long("set-project-id")
              .value_name("PROJECT_ID")
              .help("A project ID for the current repository")
              .required(false)
              .takes_value(true)
-             .conflicts_with("REQUEST_ID"))
+             .conflicts_with_all(&["CLEAR_PROJECT_ID", "LIST_MR", "REQUEST_ID"]))
+        .arg(Arg::with_name("CLEAR_PROJECT_ID")
+             .long("clear-project-id")
+             .help("A project ID for the current repository")
+             .required(false)
+             .takes_value(false)
+             .conflicts_with_all(&["REQUEST_ID", "LIST_MR", "NEW_PROJECT_ID"]))
         .arg(Arg::with_name("REQUEST_ID")
              .required(true)
-             .conflicts_with_all(&["NEW_PROJECT_ID", "LIST_MR"])
+             .conflicts_with_all(&["NEW_PROJECT_ID", "LIST_MR", "CLEAR_PROJECT_ID"])
              .index(1))
         .get_matches();
     if let Some(project_id) = matches.value_of("NEW_PROJECT_ID") {
         set_project_id(project_id);
+    } else if matches.is_present("CLEAR_PROJECT_ID") {
+        clear_project_id();
     } else if matches.is_present("LIST_MR") {
         list_open_requests();
     } else {

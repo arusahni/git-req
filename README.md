@@ -37,27 +37,31 @@ Installation
 3. Place the `git-req` executable somewhere in your `$PATH`.
 
 The first time you run `git req <#>` it will prompt you for API credentials;
-use a Personal Access Token (see Profile Settings > Personal Access Token in
-GitLab or GitHub).
+use a Personal Access Token.
+[This wiki page](https://github.com/arusahni/git-req/wiki/API-Keys) has
+instructions on locating these on both GitLab and GitHub.
 
 Configuration
 -------------
 
-I plan on introducting a better command line API in the future to manage the
-assorted configuration settings.  Currently they can only be managed by editing
-these two ini-formatted files.
+`git-req` maintains two levels of configuration: Global and Project.
 
-##### $HOME/.gitreqconfig
+#### Global
 
-This contains global settings. At the moment, it only domain API keys are
-stored here.  Edit this if you have to use a new key or remove a bad one.
+Per-domain API keys are stored in the global scope, so your API keys can be
+used across projects.
 
-##### /path/to/project/.git/config
+To clear the API key: `git req --clear-domain-key`
+To change the API key: `git req --set-domain-key NEW_KEY`
 
-Internal GitHub/GitLab project IDs are cached here under the `[req]` block.
-If you change your upstream remote, you may have to edit this property.
+#### Project
 
-The project ID stored here can be edited with `git req --set-project-id PROJECT_ID`.
+Project IDs are stored in the project scope. This ID is tied to the git host
+being used.  If you change your upstream remote, you may have to edit this
+property.
+
+To clear the project ID: `git req --clear-project-id`
+To change the project ID: `git req --set-project-id PROJECT_ID`
 
 Contributing
 ------------
@@ -65,7 +69,8 @@ Contributing
 Contributions are welcome! I'm especially looking for:
 
 * Supporting other services (e.g.  BitBucket).
-* Rust code reviews. This is my first non-trivial Rust project, so I'd love to be corrected on best practices and patterns.
+* Rust code reviews. This is my first non-trivial Rust project, so I'd love to
+  be corrected on best practices and patterns.
 
 Non-binary Version
 ------------------

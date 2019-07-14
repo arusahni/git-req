@@ -5,7 +5,7 @@ mod remotes;
 use clap::{crate_authors, crate_version, App, Arg};
 use log::{debug, info, trace};
 use std::io::{self, Write};
-use std::process;
+use std::{env, process};
 use tabwriter::TabWriter;
 
 /// Get the `origin` remote
@@ -93,7 +93,9 @@ fn list_open_requests() {
 
 /// Do the thing
 fn main() {
-    let _ = env_logger::try_init();
+    let _ = env_logger::Builder::new()
+        .parse_filters(&env::var("REQ_LOG").unwrap_or_default())
+        .try_init();
     let matches = App::new("git-req")
         .bin_name("git req")
         .author(crate_authors!("\n"))

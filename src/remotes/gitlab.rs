@@ -47,6 +47,10 @@ struct GitLabNamespace {
 }
 
 impl Remote for GitLab {
+    fn get_domain(&mut self) -> &str {
+        &self.domain
+    }
+
     fn get_project_id(&mut self) -> Result<&str, &str> {
         if self.id.is_empty() {
             self.id = format!("{}", query_gitlab_project_id(self)?);

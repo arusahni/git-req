@@ -24,6 +24,7 @@ env_logger = "0.6"
 log = "0.4.6"
 clap = "~2.32"
 tabwriter = "1"
+color-backtrace = "0.2"
 
 [dependencies.reqwest]
 version = "0.9.9"

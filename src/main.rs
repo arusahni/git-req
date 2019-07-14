@@ -93,6 +93,7 @@ fn list_open_requests() {
 
 /// Do the thing
 fn main() {
+    color_backtrace::install();
     let _ = env_logger::Builder::new()
         .parse_filters(&env::var("REQ_LOG").unwrap_or_default())
         .try_init();

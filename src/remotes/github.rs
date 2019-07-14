@@ -7,6 +7,7 @@ use serde_derive::{Deserialize, Serialize};
 #[derive(Debug)]
 pub struct GitHub {
     pub id: String,
+    pub domain: String,
     pub name: String,
     pub origin: String,
     pub api_root: String,
@@ -23,6 +24,10 @@ struct GitHubPullRequest {
 }
 
 impl Remote for GitHub {
+    fn get_domain(&mut self) -> &str {
+        &self.domain
+    }
+
     fn get_project_id(&mut self) -> Result<&str, &str> {
         Ok(&self.id)
     }

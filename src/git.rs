@@ -72,6 +72,16 @@ pub fn set_req_config(domain: &str, field: &str, value: &str) {
         .unwrap();
 }
 
+/// Clear the value for the lobal git-req configuration
+pub fn delete_req_config(domain: &str, field: &str) -> Result<(), Error> {
+    let slug = slugify_domain(domain);
+    let mut cfg = Config::open(&Path::new(
+        &shellexpand::tilde("~/.gitreqconfig").to_string(),
+    ))
+    .unwrap();
+    cfg.remove(&format!("req.{}.{}", slug, field))
+}
+
 /// Check out a branch by name
 pub fn checkout_branch(branch_name: &str) -> Result<bool, String> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");

@@ -28,6 +28,8 @@ pub trait Remote {
 
     /// Determine if the branch names are useful to display
     fn has_useful_branch_names(&mut self) -> bool;
+
+    fn get_domain(&mut self) -> &str;
 }
 
 /// Print a pretty remote
@@ -74,20 +76,23 @@ fn get_api_key(domain: &str) -> String {
 }
 
 /// Get a remote struct from an origin URL
-pub fn get_remote(origin: &str) -> Result<Box<Remote>, String> {
+pub fn get_remote(origin: &str, skip_api_key: bool) -> Result<Box<Remote>, String> {
     let domain = get_domain(origin)?;
     Ok(match domain {
         "github.com" => {
             let mut remote = github::GitHub {
                 id: github::get_github_project_name(origin),
+                domain: String::from("github.com"),
                 name: github::get_github_project_name(origin),
                 origin: String::from(origin),
                 api_root: String::from("https://api.github.com/repos"),
                 api_key: String::from(""),
             };
-            let apikey = get_api_key("github.com");
-            info!("API Key: {}", &apikey);
-            remote.api_key = apikey;
+            if !skip_api_key {
+                let apikey = get_api_key("github.com");
+                info!("API Key: {}", &apikey);
+                remote.api_key = apikey;
+            }
             Box::new(remote)
         }
         // For now, if not GitHub, then GitLab
@@ -109,21 +114,27 @@ pub fn get_remote(origin: &str) -> Result<Box<Remote>, String> {
                 api_root: format!("https://{}/api/v4", gitlab_domain),
                 api_key: String::from(""),
             };
-            let apikey = get_api_key(&domain);
-            info!("API Key: {}", &apikey);
-            remote.api_key = apikey;
+            if !skip_api_key {
+                let apikey = get_api_key(&domain);
+                info!("API Key: {}", &apikey);
+                remote.api_key = apikey;
+            }
             let project_id = match gitlab::load_project_id() {
                 Some(x) => x,
                 None => {
-                    let project_id_str = match remote.get_project_id() {
-                        Ok(id_str) => Ok(id_str),
-                        Err(e) => {
-                            info!("Error getting project ID: {:?}", e);
-                            Err(e)
-                        }
-                    }?;
-                    git::set_config("projectid", project_id_str);
-                    String::from(project_id_str)
+                    if skip_api_key {
+                        String::from("")
+                    } else {
+                        let project_id_str = match remote.get_project_id() {
+                            Ok(id_str) => Ok(id_str),
+                            Err(e) => {
+                                info!("Error getting project ID: {:?}", e);
+                                Err(e)
+                            }
+                        }?;
+                        git::set_config("projectid", project_id_str);
+                        String::from(project_id_str)
+                    }
                 }
             };
             info!("Got project ID: {}", project_id);

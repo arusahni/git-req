@@ -83,19 +83,26 @@ pub fn delete_req_config(domain: &str, field: &str) -> Result<(), Error> {
 }
 
 /// Check out a branch by name
-pub fn checkout_branch(branch_name: &str) -> Result<bool, String> {
+pub fn checkout_branch(remote_branch_name: &str, local_branch_name: &str) -> Result<bool, String> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
-    // let full_branch_name = format!("refs/heads/{}", branch_name);
-    if repo.revparse_single(branch_name).is_err() {
-        cmd!("git", "fetch").run().unwrap();
-        if repo
-            .revparse_single(&format!("origin/{}", branch_name))
-            .is_err()
-        {
-            return Err(format!("Could not find remote branch: {}", branch_name));
+    // Fetch the remote branch if there's no local branch with the correct name
+    if repo.revparse_single(local_branch_name).is_err() {
+        cmd!(
+            "git",
+            "fetch",
+            "origin",
+            &format!("{}:{}", remote_branch_name, local_branch_name)
+        )
+        .run()
+        .unwrap();
+        if repo.revparse_single(&local_branch_name).is_err() {
+            return Err(format!(
+                "Could not find remote branch: {}",
+                local_branch_name
+            ));
         }
     }
     debug!("Checking out branch!");
-    cmd!("git", "checkout", branch_name).run().unwrap();
+    cmd!("git", "checkout", local_branch_name).run().unwrap();
     Ok(true)
 }

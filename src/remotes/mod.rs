@@ -20,8 +20,11 @@ pub trait Remote {
     /// Get the ID of the project associated with the repository
     fn get_project_id(&mut self) -> Result<&str, &str>;
 
-    /// Get the branch associated with the merge request having the given ID
-    fn get_req_branch(&mut self, mr_id: i64) -> Result<String, &str>;
+    /// Get the local branch associated with the merge request having the given ID
+    fn get_local_req_branch(&mut self, mr_id: i64) -> Result<String, &str>;
+
+    /// Get the remote branch associated with the merge request having the given ID
+    fn get_remote_req_branch(&mut self, mr_id: i64) -> Result<String, &str>;
 
     /// Get the names of the merge/pull requests opened against the remote
     fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str>;

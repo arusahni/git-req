@@ -58,7 +58,11 @@ impl Remote for GitLab {
         Ok(&self.id)
     }
 
-    fn get_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
+    fn get_local_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
+        self.get_remote_req_branch(mr_id)
+    }
+
+    fn get_remote_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
         query_gitlab_branch_name(self, mr_id)
     }
 

@@ -39,7 +39,7 @@ fn checkout_mr(mr_id: i64) {
     info!("Getting MR: {}", mr_id);
     let mut remote = get_remote_hard(true);
     debug!("Found remote: {}", remote);
-    let branch_name = match remote.get_req_branch(mr_id) {
+    let remote_branch_name = match remote.get_remote_req_branch(mr_id) {
         Ok(name) => name,
         Err(error) => {
             eprintln!(
@@ -49,8 +49,11 @@ fn checkout_mr(mr_id: i64) {
             process::exit(1);
         }
     };
-    debug!("Got branch name: {}", branch_name);
-    match git::checkout_branch(&branch_name) {
+    debug!("Got remote branch name: {}", remote_branch_name);
+    match git::checkout_branch(
+        &remote_branch_name,
+        &remote.get_local_req_branch(mr_id).unwrap(),
+    ) {
         Ok(_) => {
             info!("Done!");
         }

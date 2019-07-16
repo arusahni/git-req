@@ -32,8 +32,12 @@ impl Remote for GitHub {
         Ok(&self.id)
     }
 
-    fn get_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
-        Ok(format!("pr/{}", mr_id))
+    fn get_local_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
+        Ok(format!("pr/{mr_id}", mr_id = mr_id))
+    }
+
+    fn get_remote_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
+        Ok(format!("pull/{mr_id}/head", mr_id = mr_id))
     }
 
     fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str> {

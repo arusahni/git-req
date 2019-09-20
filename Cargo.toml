@@ -1,7 +1,7 @@
 [package]
 name = "git-req"
 version = "2.0.1"
-authors = ["Aru Sahni <arusahni@gmail.com>"]
+authors = ["Aru Sahni <aru@arusahni.net>"]
 description = "Check out merge requests from your GitLab/GitHub hosted repos with ease!"
 homepage = "https://arusahni.github.io/git-req/"
 repository = "https://github.com/arusahni/git-req"

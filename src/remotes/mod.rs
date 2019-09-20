@@ -36,14 +36,14 @@ pub trait Remote {
 }
 
 /// Print a pretty remote
-impl fmt::Display for Remote {
+impl fmt::Display for dyn Remote {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Remote")
     }
 }
 
 /// Debug a remote
-impl fmt::Debug for Remote {
+impl fmt::Debug for dyn Remote {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -79,7 +79,7 @@ fn get_api_key(domain: &str) -> String {
 }
 
 /// Get a remote struct from an origin URL
-pub fn get_remote(origin: &str, skip_api_key: bool) -> Result<Box<Remote>, String> {
+pub fn get_remote(origin: &str, skip_api_key: bool) -> Result<Box<dyn Remote>, String> {
     let domain = get_domain(origin)?;
     Ok(match domain {
         "github.com" => {

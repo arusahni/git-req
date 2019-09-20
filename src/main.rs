@@ -15,13 +15,13 @@ fn get_origin() -> String {
 }
 
 /// Get the remote for the current project
-fn get_remote(fetch_api_key: bool) -> Result<Box<remotes::Remote>, String> {
+fn get_remote(fetch_api_key: bool) -> Result<Box<dyn remotes::Remote>, String> {
     let origin = get_origin();
     remotes::get_remote(&origin, !fetch_api_key)
 }
 
 /// Get the remote, fail hard otherwise
-fn get_remote_hard(fetch_api_key: bool) -> Box<remotes::Remote> {
+fn get_remote_hard(fetch_api_key: bool) -> Box<dyn remotes::Remote> {
     match get_remote(fetch_api_key) {
         Ok(x) => x,
         Err(error) => {

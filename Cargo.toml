@@ -10,7 +10,7 @@ keywords = ["git", "gitlab", "github"]
 categories = ["command-line-utilities", "development-tools"]
 license = "MIT"
 edition = "2018"
-exclude = ["ci/**/*", "docs/**/*", "appveyor.yml", ".travis.yml"]
+exclude = ["ci/**/*", "docs/**/*", "appveyor.yml", ".travis.yml", "pkg/**/*"]
 
 [dependencies]
 regex = "0.2"

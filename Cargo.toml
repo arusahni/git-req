@@ -12,6 +12,13 @@ license = "MIT"
 edition = "2018"
 exclude = ["ci/**/*", "docs/**/*", "appveyor.yml", ".travis.yml", "pkg/**/*"]
 
+[badges]
+travis-ci = { repository = "arusahni/git-req" }
+appveyor = { repository = "arusahni/git-req" }
+is-it-maintained-issue-resolution = { repository = "arusahni/git-req" }
+is-it-maintained-open-issues = { repository = "arusahni/git-req" }
+maintenance = {status = "actively-developed"}
+
 [dependencies]
 regex = "0.2"
 serde = "1.0"

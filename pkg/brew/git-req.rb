@@ -4,7 +4,6 @@ class GitReq < Formula
   url "https://github.com/arusahni/git-req/archive/v2.1.0.tar.gz"
   sha256 "a7bc8f90230762e93d348dcb22dee93b7c47d07678012976a229950a752a72ff"
 
-  depends_on "git" => :optional
   depends_on "rust" => :build
 
   def install

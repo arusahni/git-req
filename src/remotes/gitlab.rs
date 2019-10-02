@@ -222,7 +222,7 @@ fn query_gitlab_branch_name(remote: &GitLab, mr_id: i64) -> Result<String, &str>
 /// Extract the project name from a GitLab origin URL
 pub fn get_gitlab_project_name(origin: &str) -> String {
     trace!("Getting project name for: {}", origin);
-    let project_regex = Regex::new(r".*/(\S+)\.git$").unwrap();
+    let project_regex = Regex::new(r".*/(\S+?)(\.git)?$").unwrap();
     let captures = project_regex.captures(origin).unwrap();
     String::from(&captures[1])
 }
@@ -230,7 +230,7 @@ pub fn get_gitlab_project_name(origin: &str) -> String {
 /// Extract the project namespace from a GitLab origin URL
 pub fn get_gitlab_project_namespace(origin: &str) -> Option<String> {
     trace!("Getting project namespace for: {}", origin);
-    let project_regex = Regex::new(r".*[/:](\S+)/\S+\.git$").unwrap();
+    let project_regex = Regex::new(r".*[/:](\S+)/\S+(\.git)?$").unwrap();
     match project_regex.captures(origin) {
         Some(captures) => Some(String::from(&captures[1])),
         None => None,
@@ -249,8 +249,22 @@ mod tests {
     }
 
     #[test]
-    fn test_get_gitlab_project_namespace_git() {
+    fn test_get_gitlab_project_namespace_http_no_git() {
+        let ns = get_gitlab_project_namespace("https://gitlab.com/my_namespace/my_project");
+        assert!(ns.is_some());
+        assert_eq!("my_namespace", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_namespace_ssh() {
         let ns = get_gitlab_project_namespace("git@gitlab.com:my_namespace/my_project.git");
+        assert!(ns.is_some());
+        assert_eq!("my_namespace", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_namespace_ssh_no_git() {
+        let ns = get_gitlab_project_namespace("git@gitlab.com:my_namespace/my_project");
         assert!(ns.is_some());
         assert_eq!("my_namespace", ns.unwrap());
     }
@@ -262,8 +276,20 @@ mod tests {
     }
 
     #[test]
-    fn test_get_gitlab_project_name_git() {
+    fn test_get_gitlab_project_name_http_no_git() {
+        let ns = get_gitlab_project_name("https://gitlab.com/my_namespace/my_project");
+        assert_eq!("my_project", ns);
+    }
+
+    #[test]
+    fn test_get_gitlab_project_name_ssh() {
         let ns = get_gitlab_project_name("git@gitlab.com:my_namespace/my_project.git");
+        assert_eq!("my_project", ns);
+    }
+
+    #[test]
+    fn test_get_gitlab_project_name_ssh_no_git() {
+        let ns = get_gitlab_project_name("git@gitlab.com:my_namespace/my_project");
         assert_eq!("my_project", ns);
     }
 }

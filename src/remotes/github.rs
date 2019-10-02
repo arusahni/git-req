@@ -89,9 +89,9 @@ fn retrieve_github_project_pull_requests(
 /// Extract the project name from a Github origin URL
 pub fn get_github_project_name(origin: &str) -> String {
     trace!("Getting project name for: {}", origin);
-    let project_regex = Regex::new(r".*:(.*/\S+)\.git\w*$").unwrap();
-    let captures = project_regex.captures(origin).unwrap();
-    String::from(&captures[1])
+    let project_regex = Regex::new(r"((http[s]?|ssh)://)?(\S+@)?[^:/]+[:/](?P<project>\S+?)(\.git)?$").unwrap();
+    let captures = project_regex.captures(origin).unwrap().name("project").unwrap();
+    String::from(captures.as_str())
 }
 
 #[cfg(test)]
@@ -99,8 +99,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_github_project_name() {
+    fn test_get_github_project_name_ssh() {
         let name = get_github_project_name("git@github.com:my_org/my_project.git");
+        assert_eq!("my_org/my_project", name);
+    }
+
+    #[test]
+    fn test_get_github_project_name_ssh_no_git() {
+        let name = get_github_project_name("git@github.com:my_org/my_project");
+        assert_eq!("my_org/my_project", name);
+    }
+
+    #[test]
+    fn test_get_github_project_name_http() {
+        let name = get_github_project_name("http://github.com/my_org/my_project.git");
+        assert_eq!("my_org/my_project", name);
+    }
+
+    #[test]
+    fn test_get_github_project_name_http_no_git() {
+        let name = get_github_project_name("http://github.com/my_org/my_project");
         assert_eq!("my_org/my_project", name);
     }
 }

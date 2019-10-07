@@ -83,10 +83,18 @@ pub fn get_remote(origin: &str, skip_api_key: bool) -> Result<Box<dyn Remote>, S
     let domain = get_domain(origin)?;
     Ok(match domain {
         "github.com" => {
+            let name = match github::get_github_project_name(origin) {
+                Some(name) => name,
+                None => {
+                    return Err(String::from(
+                        "Could not parse the GitHub project name from the origin.",
+                    ));
+                }
+            };
             let mut remote = github::GitHub {
-                id: github::get_github_project_name(origin),
+                id: String::from(&name),
                 domain: String::from("github.com"),
-                name: github::get_github_project_name(origin),
+                name,
                 origin: String::from(origin),
                 api_root: String::from("https://api.github.com/repos"),
                 api_key: String::from(""),
@@ -108,10 +116,18 @@ pub fn get_remote(origin: &str, skip_api_key: bool) -> Result<Box<dyn Remote>, S
                     ));
                 }
             };
+            let name = match gitlab::get_gitlab_project_name(origin) {
+                Some(name) => name,
+                None => {
+                    return Err(String::from(
+                        "Could not parse the GitLab project name from the origin.",
+                    ));
+                }
+            };
             let mut remote = gitlab::GitLab {
                 id: String::from(""),
                 domain: String::from(gitlab_domain),
-                name: gitlab::get_gitlab_project_name(origin),
+                name,
                 namespace,
                 origin: String::from(origin),
                 api_root: format!("https://{}/api/v4", gitlab_domain),

@@ -168,7 +168,7 @@ fn main() {
              .required(false)
              .takes_value(true))
         .group(ArgGroup::with_name("FLAGS")
-               .args(&vec!["NEW_PROJECT_ID", "LIST_MR", "CLEAR_PROJECT_ID", "CLEAR_DOMAIN_KEY"]))
+               .args(&["NEW_PROJECT_ID", "LIST_MR", "CLEAR_PROJECT_ID", "CLEAR_DOMAIN_KEY"]))
         .arg(Arg::with_name("REQUEST_ID")
              .required(true)
              .conflicts_with_all(&["FLAGS"])

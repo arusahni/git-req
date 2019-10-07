@@ -8,6 +8,7 @@ use log::{debug, error, info, trace};
 use std::io::{self, Write};
 use std::{env, process};
 use tabwriter::TabWriter;
+use colored::*;
 
 /// Get the `origin` remote
 fn get_origin() -> String {
@@ -26,8 +27,8 @@ fn get_remote_hard(fetch_api_key: bool) -> Box<dyn remotes::Remote> {
         Ok(x) => x,
         Err(error) => {
             eprintln!(
-                "There was a problem finding the remote Git repo: {}",
-                &error
+                "{}",
+                format!("There was a problem finding the remote Git repo: {}", &error).red()
             );
             process::exit(1);
         }
@@ -43,8 +44,8 @@ fn checkout_mr(mr_id: i64) {
         Ok(name) => name,
         Err(error) => {
             eprintln!(
-                "There was a problem ascertaining the branch name: {}",
-                &error
+                "{}",
+                format!("There was a problem ascertaining the branch name: {}", &error).red()
             );
             process::exit(1);
         }
@@ -58,7 +59,10 @@ fn checkout_mr(mr_id: i64) {
             info!("Done!");
         }
         Err(error) => {
-            eprintln!("There was an error checking out the branch: {}", &error);
+            eprintln!(
+                "{}",
+                format!("There was an error checking out the branch: {}", &error).red()
+            );
             process::exit(1)
         }
     };
@@ -76,12 +80,14 @@ fn clear_domain_key() {
         },
     };
     match deleted {
-        Ok(_) => eprintln!("Domain key deleted!"),
+        Ok(_) => eprintln!(
+            "{}",
+            "Domain key deleted!".green()
+        ),
         Err(e) => {
             error!("Git Config error: {}", e);
-            eprintln!(
-                "There was an error deleting the domain key: {}",
-                e.message()
+            eprintln!("{}",
+                      format!("There was an error deleting the domain key: {}", e.message()).red()
             );
             process::exit(1)
         }
@@ -93,21 +99,21 @@ fn set_domain_key(new_key: &str) {
     trace!("Setting domain key: {}", new_key);
     let mut remote = get_remote_hard(false);
     git::set_req_config(&remote.get_domain(), "apikey", new_key);
-    eprintln!("Domain key changed!");
+    eprintln!("{}", "Domain key changed!".green());
 }
 
 /// Delete the project ID entry
 fn clear_project_id() {
     trace!("Deleting project ID");
     git::delete_config("projectid");
-    eprintln!("Project ID cleared!");
+    eprintln!("{}", "Project ID cleared!".green());
 }
 
 /// Set the project ID
 fn set_project_id(new_id: &str) {
     trace!("Setting project ID: {}", new_id);
     git::set_config("projectid", new_id);
-    eprintln!("New project ID set!");
+    eprintln!("{}", "New project ID set!".green());
 }
 
 /// Print the open requests
@@ -119,9 +125,9 @@ fn list_open_requests() {
     let mut tw = TabWriter::new(io::stdout()).padding(4);
     for mr in &mrs {
         if remote.has_useful_branch_names() {
-            writeln!(&mut tw, "{}\t{}\t{}", mr.id, mr.source_branch, mr.title).unwrap();
+            writeln!(&mut tw, "{}\t{}\t{}", mr.id.to_string().green(), mr.source_branch.green().dimmed(), mr.title).unwrap();
         } else {
-            writeln!(&mut tw, "{}\t{}", mr.id, mr.title).unwrap();
+            writeln!(&mut tw, "{}\t{}", mr.id.to_string().green(), mr.title).unwrap();
         }
     }
     tw.flush().unwrap();

@@ -10,20 +10,20 @@ use std::io::{self, Write};
 use std::{env, process};
 use tabwriter::TabWriter;
 
-/// Get the `origin` remote
-fn get_origin() -> String {
-    git::get_remote_url("origin")
+/// Get the remote url
+fn get_remote_url(remote_name: &str) -> String {
+    git::get_remote_url(remote_name)
 }
 
 /// Get the remote for the current project
-fn get_remote(fetch_api_key: bool) -> Result<Box<dyn remotes::Remote>, String> {
-    let origin = get_origin();
-    remotes::get_remote(&origin, !fetch_api_key)
+fn get_remote(remote_name: &str, fetch_api_key: bool) -> Result<Box<dyn remotes::Remote>, String> {
+    let remote_url = get_remote_url(remote_name);
+    remotes::get_remote(remote_name, &remote_url, !fetch_api_key)
 }
 
 /// Get the remote, fail hard otherwise
-fn get_remote_hard(fetch_api_key: bool) -> Box<dyn remotes::Remote> {
-    match get_remote(fetch_api_key) {
+fn get_remote_hard(remote_name: &str, fetch_api_key: bool) -> Box<dyn remotes::Remote> {
+    match get_remote(remote_name, fetch_api_key) {
         Ok(x) => x,
         Err(error) => {
             eprintln!(
@@ -39,10 +39,10 @@ fn get_remote_hard(fetch_api_key: bool) -> Box<dyn remotes::Remote> {
     }
 }
 
-/// Check out the branch corresponding to the MR ID
-fn checkout_mr(mr_id: i64) {
+/// Check out the branch corresponding to the MR ID and the remote's name
+fn checkout_mr(remote_name: &str, mr_id: i64) {
     info!("Getting MR: {}", mr_id);
-    let mut remote = get_remote_hard(true);
+    let mut remote = get_remote_hard(remote_name, true);
     debug!("Found remote: {}", remote);
     let remote_branch_name = match remote.get_remote_req_branch(mr_id) {
         Ok(name) => name,
@@ -60,6 +60,7 @@ fn checkout_mr(mr_id: i64) {
     };
     debug!("Got remote branch name: {}", remote_branch_name);
     match git::checkout_branch(
+        remote_name,
         &remote_branch_name,
         &remote.get_local_req_branch(mr_id).unwrap(),
     ) {
@@ -77,9 +78,9 @@ fn checkout_mr(mr_id: i64) {
 }
 
 /// Clear the API key for the current domain
-fn clear_domain_key() {
+fn clear_domain_key(remote_name: &str) {
     trace!("Deleting domain key");
-    let mut remote = get_remote_hard(false);
+    let mut remote = get_remote_hard(remote_name, false);
     let deleted = match git::delete_req_config(&remote.get_domain(), "apikey") {
         Ok(_) => Ok(true),
         Err(e) => match e.code() {
@@ -105,31 +106,31 @@ fn clear_domain_key() {
 }
 
 /// Set the API key for the current domain
-fn set_domain_key(new_key: &str) {
+fn set_domain_key(remote_name: &str, new_key: &str) {
     trace!("Setting domain key: {}", new_key);
-    let mut remote = get_remote_hard(false);
+    let mut remote = get_remote_hard(remote_name, false);
     git::set_req_config(&remote.get_domain(), "apikey", new_key);
     eprintln!("{}", "Domain key changed!".green());
 }
 
 /// Delete the project ID entry
-fn clear_project_id() {
-    trace!("Deleting project ID");
-    git::delete_config("projectid");
+fn clear_project_id(remote_name: &str) {
+    trace!("Deleting project ID for {}", remote_name);
+    git::delete_config("projectid", remote_name);
     eprintln!("{}", "Project ID cleared!".green());
 }
 
 /// Set the project ID
-fn set_project_id(new_id: &str) {
-    trace!("Setting project ID: {}", new_id);
-    git::set_config("projectid", new_id);
+fn set_project_id(remote_name: &str, new_id: &str) {
+    trace!("Setting project ID: {} for remote: {}", new_id, remote_name);
+    git::set_config("projectid", remote_name, new_id);
     eprintln!("{}", "New project ID set!".green());
 }
 
 /// Print the open requests
-fn list_open_requests() {
+fn list_open_requests(remote_name: &str) {
     info!("Getting open requests");
-    let mut remote = get_remote_hard(true);
+    let mut remote = get_remote_hard(remote_name, true);
     debug!("Found remote: {}", remote);
     let mrs = remote.get_req_names().unwrap();
     let mut tw = TabWriter::new(io::stdout()).padding(4);
@@ -190,6 +191,13 @@ fn main() {
              .help("Set the API key for the current repository's domain")
              .required(false)
              .takes_value(true))
+        .arg(Arg::with_name("REMOTE_NAME")
+             .short("u")
+             .long("use-remote")
+             .help("Specify the remote to be used")
+             .required(false)
+             .takes_value(true)
+             .default_value("origin"))
         .group(ArgGroup::with_name("FLAGS")
                .args(&["NEW_PROJECT_ID", "LIST_MR", "CLEAR_PROJECT_ID", "CLEAR_DOMAIN_KEY"]))
         .arg(Arg::with_name("REQUEST_ID")
@@ -197,17 +205,23 @@ fn main() {
              .conflicts_with_all(&["FLAGS"])
              .index(1))
         .get_matches();
+
+    let remote_name = matches.value_of("REMOTE_NAME").unwrap();
+
     if let Some(project_id) = matches.value_of("NEW_PROJECT_ID") {
-        set_project_id(project_id);
+        set_project_id(remote_name, project_id);
     } else if matches.is_present("CLEAR_PROJECT_ID") {
-        clear_project_id();
+        clear_project_id(remote_name);
     } else if matches.is_present("LIST_MR") {
-        list_open_requests();
+        list_open_requests(remote_name);
     } else if matches.is_present("CLEAR_DOMAIN_KEY") {
-        clear_domain_key();
+        clear_domain_key(remote_name);
     } else if let Some(domain_key) = matches.value_of("NEW_DOMAIN_KEY") {
-        set_domain_key(domain_key);
+        set_domain_key(remote_name, domain_key);
     } else {
-        checkout_mr(matches.value_of("REQUEST_ID").unwrap().parse().unwrap());
+        checkout_mr(
+            remote_name,
+            matches.value_of("REQUEST_ID").unwrap().parse().unwrap(),
+        );
     }
 }

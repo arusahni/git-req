@@ -6,6 +6,18 @@ use git2::{Config, Error, Repository};
 use log::debug;
 use shellexpand;
 
+/// Update old `req.key` config format to include remote name, i.e, `req.remote_name.key`
+fn migrate_legacy(field_name: &str, remote_name: &str) {
+    let repo = Repository::open_from_env().expect("Couldn't find repository");
+    let mut cfg = repo.config().unwrap();
+
+    if let Ok(ref value) = cfg.get_string(&format!("req.{}", field_name)) {
+        cfg.set_str(&format!("req.{}.{}", remote_name, field_name), value)
+            .unwrap();
+        cfg.remove(&format!("req.{}", field_name)).unwrap();
+    }
+}
+
 /// Convert a domain string into a configuration slug
 fn slugify_domain(domain: &str) -> String {
     str::replace(domain, ".", "|")
@@ -26,8 +38,9 @@ pub fn get_repo_info(repo_field: &str) -> Result<String, Error> {
 }
 
 /// Get a value for the given project-local git-req config
-pub fn get_config(field_name: &str) -> Option<String> {
-    let key = format!("req.{}", field_name);
+pub fn get_config(field_name: &str, remote_name: &str) -> Option<String> {
+    migrate_legacy(field_name, "origin");
+    let key = format!("req.{}.{}", remote_name, field_name);
     match get_repo_info(&key) {
         Ok(val) => Some(val),
         Err(_) => None,
@@ -35,17 +48,21 @@ pub fn get_config(field_name: &str) -> Option<String> {
 }
 
 /// Set a value for the project-local git-req configuration
-pub fn set_config(field_name: &str, value: &str) {
+pub fn set_config(field_name: &str, remote_name: &str, value: &str) {
+    migrate_legacy(field_name, "origin");
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     let mut cfg = repo.config().unwrap();
-    cfg.set_str(&format!("req.{}", field_name), value).unwrap();
+    cfg.set_str(&format!("req.{}.{}", remote_name, field_name), value)
+        .unwrap();
 }
 
 /// Delete the entry for the project-local git-req config field with the provided name
-pub fn delete_config(field_name: &str) {
+pub fn delete_config(field_name: &str, remote_name: &str) {
+    migrate_legacy(field_name, "origin");
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     let mut cfg = repo.config().unwrap();
-    cfg.remove(&format!("req.{}", field_name)).unwrap();
+    cfg.remove(&format!("req.{}.{}", remote_name, field_name))
+        .unwrap();
 }
 
 /// Get a value for the given global git-req config
@@ -83,14 +100,20 @@ pub fn delete_req_config(domain: &str, field: &str) -> Result<(), Error> {
 }
 
 /// Check out a branch by name
-pub fn checkout_branch(remote_branch_name: &str, local_branch_name: &str) -> Result<bool, String> {
+pub fn checkout_branch(
+    remote_name: &str,
+    remote_branch_name: &str,
+    local_branch_name: &str,
+) -> Result<bool, String> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
+    let local_branch_name = &format!("{}/{}", remote_name, local_branch_name);
+
     // Fetch the remote branch if there's no local branch with the correct name
     if repo.revparse_single(local_branch_name).is_err() {
         cmd!(
             "git",
             "fetch",
-            "origin",
+            remote_name,
             &format!("{}:{}", remote_branch_name, local_branch_name)
         )
         .run()

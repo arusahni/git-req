@@ -79,7 +79,11 @@ fn get_api_key(domain: &str) -> String {
 }
 
 /// Get a remote struct from an origin URL
-pub fn get_remote(origin: &str, skip_api_key: bool) -> Result<Box<dyn Remote>, String> {
+pub fn get_remote(
+    remote_name: &str,
+    origin: &str,
+    skip_api_key: bool,
+) -> Result<Box<dyn Remote>, String> {
     let domain = get_domain(origin)?;
     Ok(match domain {
         "github.com" => {
@@ -138,7 +142,7 @@ pub fn get_remote(origin: &str, skip_api_key: bool) -> Result<Box<dyn Remote>, S
                 info!("API Key: {}", &apikey);
                 remote.api_key = apikey;
             }
-            let project_id = match gitlab::load_project_id() {
+            let project_id = match gitlab::load_project_id(remote_name) {
                 Some(x) => x,
                 None => {
                     if skip_api_key {
@@ -151,7 +155,7 @@ pub fn get_remote(origin: &str, skip_api_key: bool) -> Result<Box<dyn Remote>, S
                                 Err(e)
                             }
                         }?;
-                        git::set_config("projectid", project_id_str);
+                        git::set_config("projectid", remote_name, project_id_str);
                         String::from(project_id_str)
                     }
                 }

@@ -185,9 +185,9 @@ fn search_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
     }
 }
 
-/// Get the project ID from config
-pub fn load_project_id() -> Option<String> {
-    match git::get_config("projectid") {
+/// Get the project ID for the specified remote from config
+pub fn load_project_id(remote_name: &str) -> Option<String> {
+    match git::get_config("projectid", remote_name) {
         Some(project_id) => Some(project_id),
         None => {
             debug!("No project ID found");

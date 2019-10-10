@@ -105,6 +105,6 @@ pub fn checkout_branch(remote_branch_name: &str, local_branch_name: &str) -> Res
     debug!("Checking out branch!");
     match cmd!("git", "checkout", local_branch_name).run() {
         Ok(_) => Ok(true),
-        Err(err) => Err(format!("Could not check out local branch: {}", err))
+        Err(err) => Err(format!("Could not check out local branch: {}", err)),
     }
 }

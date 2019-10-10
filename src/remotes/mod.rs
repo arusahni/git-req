@@ -4,7 +4,6 @@ use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 use std::io::{stdin, stdout, Write};
-use colored::*;
 
 pub mod github;
 pub mod gitlab;

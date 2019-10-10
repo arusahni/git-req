@@ -92,7 +92,9 @@ pub fn checkout_branch(remote_branch_name: &str, local_branch_name: &str) -> Res
             "fetch",
             "origin",
             &format!("{}:{}", remote_branch_name, local_branch_name)
-        ).run().unwrap();
+        )
+        .run()
+        .unwrap();
         if repo.revparse_single(&local_branch_name).is_err() {
             return Err(format!(
                 "Could not find remote branch: {}",

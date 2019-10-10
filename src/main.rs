@@ -3,12 +3,12 @@ mod git;
 mod remotes;
 
 use clap::{crate_authors, crate_version, App, Arg, ArgGroup};
+use colored::*;
 use git2::ErrorCode;
 use log::{debug, error, info, trace};
 use std::io::{self, Write};
 use std::{env, process};
 use tabwriter::TabWriter;
-use colored::*;
 
 /// Get the `origin` remote
 fn get_origin() -> String {
@@ -28,7 +28,11 @@ fn get_remote_hard(fetch_api_key: bool) -> Box<dyn remotes::Remote> {
         Err(error) => {
             eprintln!(
                 "{}",
-                format!("There was a problem finding the remote Git repo: {}", &error).red()
+                format!(
+                    "There was a problem finding the remote Git repo: {}",
+                    &error
+                )
+                .red()
             );
             process::exit(1);
         }
@@ -45,7 +49,11 @@ fn checkout_mr(mr_id: i64) {
         Err(error) => {
             eprintln!(
                 "{}",
-                format!("There was a problem ascertaining the branch name: {}", &error).red()
+                format!(
+                    "There was a problem ascertaining the branch name: {}",
+                    &error
+                )
+                .red()
             );
             process::exit(1);
         }
@@ -80,14 +88,16 @@ fn clear_domain_key() {
         },
     };
     match deleted {
-        Ok(_) => eprintln!(
-            "{}",
-            "Domain key deleted!".green()
-        ),
+        Ok(_) => eprintln!("{}", "Domain key deleted!".green()),
         Err(e) => {
             error!("Git Config error: {}", e);
-            eprintln!("{}",
-                      format!("There was an error deleting the domain key: {}", e.message()).red()
+            eprintln!(
+                "{}",
+                format!(
+                    "There was an error deleting the domain key: {}",
+                    e.message()
+                )
+                .red()
             );
             process::exit(1)
         }
@@ -125,7 +135,14 @@ fn list_open_requests() {
     let mut tw = TabWriter::new(io::stdout()).padding(4);
     for mr in &mrs {
         if remote.has_useful_branch_names() {
-            writeln!(&mut tw, "{}\t{}\t{}", mr.id.to_string().green(), mr.source_branch.green().dimmed(), mr.title).unwrap();
+            writeln!(
+                &mut tw,
+                "{}\t{}\t{}",
+                mr.id.to_string().green(),
+                mr.source_branch.green().dimmed(),
+                mr.title
+            )
+            .unwrap();
         } else {
             writeln!(&mut tw, "{}\t{}", mr.id.to_string().green(), mr.title).unwrap();
         }

@@ -1,0 +1,41 @@
+name: git-req
+bin_name: git req
+about: Switch between merge/pull requests in your GitLab and GitHub repositories with just the request ID.
+args:
+  - LIST_MR:
+      short: l
+      long: list
+      help: List all open requests against the repository
+      takes_value: false
+      required: false
+  - NEW_PROJECT_ID:
+      long: set-project-id
+      value_name: PROJECT_ID
+      help: Set a project ID for the current repository
+      takes_value: true
+      required: false
+  - CLEAR_PROJECT_ID:
+      long: clear-project-id
+      help: Clear the project ID for the current repository
+      takes_value: false
+      required: false
+  - NEW_DOMAIN_KEY:
+      long: set-domain-key
+      value_name: DOMAIN_KEY
+      help: Set the API key for the current repository's domain
+      takes_value: true
+      required: false
+  - CLEAR_DOMAIN_KEY:
+      long: clear-domain-key
+      help: Clear the API key for the current repository's domain
+      takes_value: false
+      required: false
+  - REQUEST_ID:
+      conflicts_with:
+        - NEW_PROJECT_ID
+        - CLEAR_PROJECT_ID
+        - NEW_DOMAIN_KEY
+        - CLEAR_DOMAIN_KEY
+        - LIST_MR
+      required: true
+      index: 1

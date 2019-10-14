@@ -160,9 +160,11 @@ fn main() {
 
     let cfg = load_yaml!("../cli-flags.yml");
     let app = App::from_yaml(&cfg);
-    let matches = app.version(crate_version!())
-                     .author(crate_authors!("\n"))
-                     .get_matches();
+
+    let matches = app
+        .version(crate_version!())
+        .author(crate_authors!("\n"))
+        .get_matches();
 
     let remote_name = matches.value_of("REMOTE_NAME").unwrap();
 

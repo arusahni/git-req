@@ -30,6 +30,13 @@ args:
       help: Clear the API key for the current repository's domain
       takes_value: false
       required: false
+  - REMOTE_NAME:
+      short: u
+      long: use-remote
+      help: Specify the remote to be used
+      takes_value: true
+      required: false
+      default_value: origin
   - REQUEST_ID:
       conflicts_with:
         - NEW_PROJECT_ID

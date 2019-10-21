@@ -58,8 +58,12 @@ fn set_args(mut p: Manual, y: &Yaml) -> Manual {
                     .long(parse_str(&arg, "long").as_str())
                     .help(parse_str(&arg, "help").as_str());
                 let short = parse_str(&arg, "short");
+                let default_value = parse_str(&arg, "default_value");
                 if short != "" {
                     o = o.short(short.as_str());
+                }
+                if default_value != "" {
+                    o = o.default_value(default_value.as_str());
                 }
                 p = p.option(o);
             }
@@ -70,18 +74,10 @@ fn set_args(mut p: Manual, y: &Yaml) -> Manual {
     p
 }
 
-fn main() -> std::io::Result<()> {
-    let trg_dir = match env::var("CARGO_TARGET_DIR") {
-        Ok(s) => s,
-        Err(_) => String::from("target"),
-    };
-
+fn generate_manpage(yml: &Yaml, trg_dir: &String) -> std::io::Result<()> {
     let out_location = Path::new(&trg_dir)
         .join(&env::var("PROFILE").unwrap())
         .join("git-req.man");
-
-    let yml = YamlLoader::load_from_str(include_str!("cli-flags.yml")).unwrap();
-    let yml = yml.get(0).unwrap();
 
     let page = Manual::new("git-req").about(yml["about"].as_str().unwrap());
     let page = set_authors(page);
@@ -89,6 +85,20 @@ fn main() -> std::io::Result<()> {
 
     let mut output = File::create(out_location)?;
     write!(output, "{}", page.render())?;
+
+    Ok(())
+}
+
+fn main() -> std::io::Result<()> {
+    let trg_dir = match env::var("CARGO_TARGET_DIR") {
+        Ok(s) => s,
+        Err(_) => String::from("target"),
+    };
+
+    let yml = YamlLoader::load_from_str(include_str!("cli-flags.yml")).unwrap();
+    let yml = yml.get(0).unwrap();
+
+    generate_manpage(yml, &trg_dir)?;
 
     Ok(())
 }

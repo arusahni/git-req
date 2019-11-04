@@ -74,10 +74,8 @@ fn set_args(mut p: Manual, y: &Yaml) -> Manual {
     p
 }
 
-fn generate_manpage(yml: &Yaml, trg_dir: &String) -> std::io::Result<()> {
-    let out_location = Path::new(&trg_dir)
-        .join(&env::var("PROFILE").unwrap())
-        .join("git-req.man");
+fn generate_manpage(yml: &Yaml, trg_dir: &Path) -> std::io::Result<()> {
+    let out_location = trg_dir.join("git-req.man");
 
     let page = Manual::new("git-req").about(yml["about"].as_str().unwrap());
     let page = set_authors(page);
@@ -94,6 +92,7 @@ fn main() -> std::io::Result<()> {
         Ok(s) => s,
         Err(_) => String::from("target"),
     };
+    let trg_dir = Path::new(&trg_dir).join(&env::var("PROFILE").unwrap());
 
     let yml = YamlLoader::load_from_str(include_str!("cli-flags.yml")).unwrap();
     let yml = yml.get(0).unwrap();

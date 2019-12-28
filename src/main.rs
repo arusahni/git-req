@@ -166,7 +166,8 @@ fn main() {
         .author(crate_authors!("\n"))
         .get_matches();
 
-    let remote_name = matches.value_of("REMOTE_NAME").unwrap();
+    // Not using Clap's default_value because of https://github.com/clap-rs/clap/issues/1140
+    let remote_name = matches.value_of("REMOTE_NAME").unwrap_or("origin");
 
     if let Some(project_id) = matches.value_of("NEW_PROJECT_ID") {
         set_project_id(remote_name, project_id);

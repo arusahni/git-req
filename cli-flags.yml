@@ -8,28 +8,60 @@ args:
       help: List all open requests against the repository
       takes_value: false
       required: false
+      conflicts_with:
+        - NEW_PROJECT_ID
+        - CLEAR_PROJECT_ID
+        - NEW_DOMAIN_KEY
+        - CLEAR_DOMAIN_KEY
+        - GENERATE_COMPLETIONS
   - NEW_PROJECT_ID:
       long: set-project-id
       value_name: PROJECT_ID
       help: Set a project ID for the current repository
       takes_value: true
       required: false
+      conflicts_with:
+        - CLEAR_PROJECT_ID
+        - NEW_DOMAIN_KEY
+        - CLEAR_DOMAIN_KEY
+        - GENERATE_COMPLETIONS
   - CLEAR_PROJECT_ID:
       long: clear-project-id
       help: Clear the project ID for the current repository
       takes_value: false
       required: false
+      conflicts_with:
+        - NEW_DOMAIN_KEY
+        - CLEAR_DOMAIN_KEY
+        - GENERATE_COMPLETIONS
   - NEW_DOMAIN_KEY:
       long: set-domain-key
       value_name: DOMAIN_KEY
       help: Set the API key for the current repository's domain
       takes_value: true
       required: false
+      conflicts_with:
+        - CLEAR_DOMAIN_KEY
+        - GENERATE_COMPLETIONS
   - CLEAR_DOMAIN_KEY:
       long: clear-domain-key
       help: Clear the API key for the current repository's domain
       takes_value: false
       required: false
+      conflicts_with:
+        - GENERATE_COMPLETIONS
+  - GENERATE_COMPLETIONS:
+      long: completions
+      help: Generate a shell completion file
+      takes_value: true
+      possible_values:
+        - bash
+        - fish
+        - zsh
+      value_name: SHELL_NAME
+      required: false
+      conflicts_with:
+        - REMOTE_NAME
   - REMOTE_NAME:
       short: u
       long: use-remote
@@ -37,11 +69,19 @@ args:
       takes_value: true
       required: false
   - REQUEST_ID:
+      help: the ID of the MR or PR
+      takes_value: true
+      required_unless_one:
+        - NEW_PROJECT_ID
+        - CLEAR_PROJECT_ID
+        - NEW_DOMAIN_KEY
+        - CLEAR_DOMAIN_KEY
+        - LIST_MR
+        - GENERATE_COMPLETIONS
       conflicts_with:
         - NEW_PROJECT_ID
         - CLEAR_PROJECT_ID
         - NEW_DOMAIN_KEY
         - CLEAR_DOMAIN_KEY
         - LIST_MR
-      required: true
-      index: 1
+        - GENERATE_COMPLETIONS

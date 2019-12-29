@@ -63,6 +63,34 @@ property.
 To clear the project ID: `git req --clear-project-id`
 To change the project ID: `git req --set-project-id PROJECT_ID`
 
+
+Completions
+-----------
+
+Completions are available for ZShell, Bash, and Fish shells.
+
+**ZShell**
+
+```bash
+git req --completions zsh > /path/to/zfunc/location/_git-req
+rm ~/.zcompdump
+exec zsh
+```
+
+**Bash**
+
+```bash
+git req --completions bash > git-req-completions.sh
+source git-req-completions.sh  # add this to your .bashrc!
+```
+
+**Fish**
+
+```bash
+git req --completions fish > git-req-completions.fish
+source git-req-completions.fish
+```
+
 Contributing
 ------------
 

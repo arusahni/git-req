@@ -2,7 +2,7 @@
 mod git;
 mod remotes;
 
-use clap::{crate_authors, crate_version, load_yaml, App};
+use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
 use colored::*;
 use git2::ErrorCode;
 use log::{debug, error, info, trace};
@@ -151,6 +151,14 @@ fn list_open_requests(remote_name: &str) {
     tw.flush().unwrap();
 }
 
+fn build_cli<'a>(cfg: &'a yaml_rust::Yaml) -> App<'a, 'a> {
+    App::from_yaml(&cfg)
+        .version(crate_version!())
+        .author(crate_authors!("\n"))
+        .setting(AppSettings::ArgsNegateSubcommands)
+        .usage("git req [OPTIONS] [REQUEST_ID]")
+}
+
 /// Do the thing
 fn main() {
     color_backtrace::install();
@@ -159,12 +167,8 @@ fn main() {
         .try_init();
 
     let cfg = load_yaml!("../cli-flags.yml");
-    let app = App::from_yaml(&cfg);
-
-    let matches = app
-        .version(crate_version!())
-        .author(crate_authors!("\n"))
-        .get_matches();
+    let app = build_cli(&cfg);
+    let matches = app.get_matches();
 
     // Not using Clap's default_value because of https://github.com/clap-rs/clap/issues/1140
     let remote_name = matches.value_of("REMOTE_NAME").unwrap_or("origin");
@@ -179,6 +183,9 @@ fn main() {
         clear_domain_key(remote_name);
     } else if let Some(domain_key) = matches.value_of("NEW_DOMAIN_KEY") {
         set_domain_key(remote_name, domain_key);
+    } else if let Some(shell_name) = matches.value_of("GENERATE_COMPLETIONS") {
+        let mut app = build_cli(&cfg);
+        app.gen_completions_to("git-req", shell_name.parse().unwrap(), &mut io::stdout());
     } else {
         checkout_mr(
             remote_name,

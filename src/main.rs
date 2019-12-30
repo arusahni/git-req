@@ -6,7 +6,7 @@ use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
 use colored::*;
 use git2::ErrorCode;
 use log::{debug, error, info, trace};
-use std::io::{self, Write};
+use std::io::{self, Cursor, Write};
 use std::{env, process};
 use tabwriter::TabWriter;
 
@@ -151,7 +151,19 @@ fn list_open_requests(remote_name: &str) {
     tw.flush().unwrap();
 }
 
-fn build_cli<'a>(cfg: &'a yaml_rust::Yaml) -> App<'a, 'a> {
+/// Print a shell completion script
+fn generate_completion(app: &mut App, shell_name: &str) {
+    let mut buffer = Cursor::new(Vec::new());
+    app.gen_completions_to("git-req", shell_name.parse().unwrap(), &mut buffer);
+    let mut output = String::from_utf8(buffer.into_inner()).unwrap_or_else(|_| String::from(""));
+    if shell_name == "zsh" {
+        // Clap assigns the _files completor to the REQUEST_ID. This is undesirable.
+        output = output.replace(":_files", ":");
+    }
+    print!("{}", &output);
+}
+
+fn build_cli(cfg: &yaml_rust::Yaml) -> App {
     App::from_yaml(&cfg)
         .version(crate_version!())
         .author(crate_authors!("\n"))
@@ -185,7 +197,7 @@ fn main() {
         set_domain_key(remote_name, domain_key);
     } else if let Some(shell_name) = matches.value_of("GENERATE_COMPLETIONS") {
         let mut app = build_cli(&cfg);
-        app.gen_completions_to("git-req", shell_name.parse().unwrap(), &mut io::stdout());
+        generate_completion(&mut app, &shell_name);
     } else {
         checkout_mr(
             remote_name,

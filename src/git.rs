@@ -3,7 +3,7 @@ use std::str;
 
 use duct::cmd;
 use git2::{Config, Error, Repository};
-use log::debug;
+use log::{debug, trace};
 use shellexpand;
 
 /// Update old `req.key` config format to include remote name, i.e, `req.remote_name.key`
@@ -26,7 +26,7 @@ fn slugify_domain(domain: &str) -> String {
 /// Get the URL of the given remote
 pub fn get_remote_url(remote: &str) -> String {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
-    let remote = repo.find_remote(remote).unwrap();
+    let remote = repo.find_remote(remote).expect("Couldn't find the remote");
     String::from(remote.url().unwrap())
 }
 
@@ -99,6 +99,21 @@ pub fn delete_req_config(domain: &str, field: &str) -> Result<(), Error> {
     cfg.remove(&format!("req.{}.{}", slug, field))
 }
 
+/// Get the name of the default remote
+#[allow(clippy::match_wild_err_arm)]
+pub fn get_default_remote_name() -> Result<String, String> {
+    let repo = Repository::open_from_env().expect("Couldn't find repository");
+    let remotes = repo.remotes().expect("Couldn't fetch the list of remotes");
+    match remotes.len() {
+        0 => panic!("Could not find any remotes"),
+        1 => Ok(String::from(remotes.get(0).unwrap())),
+        _ => match repo.find_remote("origin") {
+            Ok(_) => Ok(String::from("origin")),
+            Err(_) => Err(String::from("No origin remote found")),
+        },
+    }
+}
+
 /// Check out a branch by name
 pub fn checkout_branch(
     remote_name: &str,
@@ -106,18 +121,41 @@ pub fn checkout_branch(
     local_branch_name: &str,
 ) -> Result<bool, String> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
-    let local_branch_name = &format!("{}/{}", remote_name, local_branch_name);
+    let local_branch_name = match get_default_remote_name() {
+        Ok(default_remote_name) => {
+            if remote_name != default_remote_name {
+                trace!("Non-default remote name requested: {}", remote_name);
+                format!("{}/{}", remote_name, local_branch_name)
+            } else {
+                trace!("Default remote name requested: {}", remote_name);
+                String::from(local_branch_name)
+            }
+        }
+        Err(_) => {
+            trace!(
+                "Multiple remotes found, but none named origin: {}",
+                remote_name
+            );
+            format!("{}/{}", remote_name, local_branch_name)
+        }
+    };
 
     // Fetch the remote branch if there's no local branch with the correct name
-    if repo.revparse_single(local_branch_name).is_err() {
-        cmd!(
+    if repo.revparse_single(&local_branch_name).is_err() {
+        if cmd!(
             "git",
             "fetch",
             remote_name,
             &format!("{}:{}", remote_branch_name, local_branch_name)
         )
         .run()
-        .unwrap();
+        .is_err()
+        {
+            return Err(format!(
+                "Could not fetch remote branch '{}' to local ref '{}'",
+                remote_branch_name, local_branch_name
+            ));
+        }
         if repo.revparse_single(&local_branch_name).is_err() {
             return Err(format!(
                 "Could not find remote branch: {}",
@@ -125,7 +163,7 @@ pub fn checkout_branch(
             ));
         }
     }
-    debug!("Checking out branch!");
+    debug!("Checking out branch: {}", local_branch_name);
     match cmd!("git", "checkout", local_branch_name).run() {
         Ok(_) => Ok(true),
         Err(err) => Err(format!("Could not check out local branch: {}", err)),

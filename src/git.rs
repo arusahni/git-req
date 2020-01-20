@@ -119,6 +119,7 @@ pub fn checkout_branch(
     remote_name: &str,
     remote_branch_name: &str,
     local_branch_name: &str,
+    is_virtual_remote_branch: bool,
 ) -> Result<bool, String> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     let local_branch_name = match get_default_remote_name() {
@@ -140,32 +141,41 @@ pub fn checkout_branch(
         }
     };
 
-    // Fetch the remote branch if there's no local branch with the correct name
-    if repo.revparse_single(&local_branch_name).is_err() {
-        if cmd!(
-            "git",
-            "fetch",
-            remote_name,
-            &format!("{}:{}", remote_branch_name, local_branch_name)
-        )
-        .run()
-        .is_err()
-        {
-            return Err(format!(
-                "Could not fetch remote branch '{}' to local ref '{}'",
-                remote_branch_name, local_branch_name
-            ));
+    let local_branch_exists = repo.revparse_single(&local_branch_name);
+    match local_branch_exists {
+        Ok(_) => {
+            debug!("Checking out branch: {}", local_branch_name);
+            match cmd!("git", "checkout", &local_branch_name).run() {
+                Ok(_) => Ok(true),
+                Err(err) => Err(format!("Could not check out local branch: {}", err)),
+            }
         }
-        if repo.revparse_single(&local_branch_name).is_err() {
-            return Err(format!(
-                "Could not find remote branch: {}",
-                local_branch_name
-            ));
+        Err(_) => {
+            // Fetch the remote branch if there's no local branch with the correct name
+            let mut fetch_args = vec!["fetch", &remote_name];
+            let remote_to_local_binding = format!("{}:{}", remote_branch_name, local_branch_name);
+            fetch_args.push(if is_virtual_remote_branch {
+                &remote_to_local_binding
+            } else {
+                &remote_branch_name
+            });
+            if cmd("git", fetch_args).run().is_err() {
+                return Err(format!(
+                    "Could not fetch remote branch '{}'",
+                    remote_branch_name
+                ));
+            };
+            debug!("Checking out branch: {}", local_branch_name);
+            let origin_with_remote = format!("{}/{}", remote_name, remote_branch_name);
+            let remote_ref = if is_virtual_remote_branch {
+                &local_branch_name
+            } else {
+                &origin_with_remote
+            };
+            match cmd!("git", "checkout", "-b", &local_branch_name, &remote_ref).run() {
+                Ok(_) => Ok(true),
+                Err(err) => Err(format!("Could not check out local branch: {}", err)),
+            }
         }
-    }
-    debug!("Checking out branch: {}", local_branch_name);
-    match cmd!("git", "checkout", local_branch_name).run() {
-        Ok(_) => Ok(true),
-        Err(err) => Err(format!("Could not check out local branch: {}", err)),
     }
 }

@@ -73,6 +73,10 @@ impl Remote for GitLab {
     fn has_useful_branch_names(&mut self) -> bool {
         true
     }
+
+    fn has_virtual_remote_branch_names(&mut self) -> bool {
+        false
+    }
 }
 
 /// Query the GitLab API

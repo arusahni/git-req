@@ -63,6 +63,7 @@ fn checkout_mr(remote_name: &str, mr_id: i64) {
         remote_name,
         &remote_branch_name,
         &remote.get_local_req_branch(mr_id).unwrap(),
+        remote.has_virtual_remote_branch_names(),
     ) {
         Ok(_) => {
             info!("Done!");

@@ -47,6 +47,10 @@ impl Remote for GitHub {
     fn has_useful_branch_names(&mut self) -> bool {
         false
     }
+
+    fn has_virtual_remote_branch_names(&mut self) -> bool {
+        true
+    }
 }
 
 /// Convert a GitHub PR to a git-req MergeRequest

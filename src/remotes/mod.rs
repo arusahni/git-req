@@ -32,6 +32,11 @@ pub trait Remote {
     /// Determine if the branch names are useful to display
     fn has_useful_branch_names(&mut self) -> bool;
 
+    /// If the remote branch is a namespaced ref instead of an actual branch
+    // This is useful for GitHub's `pull/mr/head` refs, where they're read-only
+    fn has_virtual_remote_branch_names(&mut self) -> bool;
+
+    /// The domain that hosts the remote
     fn get_domain(&mut self) -> &str;
 }
 

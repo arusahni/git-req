@@ -154,7 +154,7 @@ pub fn checkout_branch(
         Some(default_remote_name) => {
             if remote_name != default_remote_name {
                 trace!("Non-default remote name requested: {}", remote_name);
-                format!("{}/{}", remote_name, local_branch_name)
+                format!("req/{}/{}", remote_name, local_branch_name)
             } else {
                 trace!("Default remote name requested: {}", remote_name);
                 String::from(local_branch_name)

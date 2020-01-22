@@ -128,6 +128,13 @@ fn set_project_id(remote_name: &str, new_id: &str) {
     eprintln!("{}", "New project ID set!".green());
 }
 
+/// Set the default remote for the repository
+fn set_default_remote(remote_name: &str) {
+    trace!("Setting default remote {}", remote_name);
+    git::set_project_config("defaultremote", remote_name);
+    eprintln!("{}", "New default remote set!".green());
+}
+
 /// Print the open requests
 fn list_open_requests(remote_name: &str) {
     info!("Getting open requests");
@@ -178,7 +185,9 @@ fn get_remote_name(matches: &ArgMatches) -> String {
                     }
                     print!("Remote name: ");
                     let _ = stdout().flush();
-                    stdin().read_line(&mut new_remote_name).expect("Did not input a name");
+                    stdin()
+                        .read_line(&mut new_remote_name)
+                        .expect("Did not input a name");
                     trace!("New remote: {}", &new_remote_name);
                     if !git::get_remotes().contains(new_remote_name.trim()) {
                         panic!("Invalid remote name provided")
@@ -191,7 +200,11 @@ fn get_remote_name(matches: &ArgMatches) -> String {
         }
     };
     // Not using Clap's default_value because of https://github.com/clap-rs/clap/issues/1140
-    String::from(matches.value_of("REMOTE_NAME").unwrap_or(&default_remote_name))
+    String::from(
+        matches
+            .value_of("REMOTE_NAME")
+            .unwrap_or(&default_remote_name),
+    )
 }
 
 fn build_cli(cfg: &yaml_rust::Yaml) -> App {
@@ -223,6 +236,8 @@ fn main() {
         clear_domain_key(&get_remote_name(&matches));
     } else if let Some(domain_key) = matches.value_of("NEW_DOMAIN_KEY") {
         set_domain_key(&get_remote_name(&matches), domain_key);
+    } else if let Some(remote_name) = matches.value_of("NEW_DEFAULT_REMOTE") {
+        set_default_remote(remote_name);
     } else if let Some(shell_name) = matches.value_of("GENERATE_COMPLETIONS") {
         let mut app = build_cli(&cfg);
         generate_completion(&mut app, &shell_name);

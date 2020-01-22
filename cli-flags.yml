@@ -13,6 +13,7 @@ args:
         - CLEAR_PROJECT_ID
         - NEW_DOMAIN_KEY
         - CLEAR_DOMAIN_KEY
+        - NEW_DEFAULT_REMOTE
         - GENERATE_COMPLETIONS
   - NEW_PROJECT_ID:
       long: set-project-id
@@ -24,6 +25,7 @@ args:
         - CLEAR_PROJECT_ID
         - NEW_DOMAIN_KEY
         - CLEAR_DOMAIN_KEY
+        - NEW_DEFAULT_REMOTE
         - GENERATE_COMPLETIONS
   - CLEAR_PROJECT_ID:
       long: clear-project-id
@@ -33,6 +35,7 @@ args:
       conflicts_with:
         - NEW_DOMAIN_KEY
         - CLEAR_DOMAIN_KEY
+        - NEW_DEFAULT_REMOTE
         - GENERATE_COMPLETIONS
   - NEW_DOMAIN_KEY:
       long: set-domain-key
@@ -42,11 +45,20 @@ args:
       required: false
       conflicts_with:
         - CLEAR_DOMAIN_KEY
+        - NEW_DEFAULT_REMOTE
         - GENERATE_COMPLETIONS
   - CLEAR_DOMAIN_KEY:
       long: clear-domain-key
       help: Clear the API key for the current repository's domain
       takes_value: false
+      required: false
+      conflicts_with:
+        - NEW_DEFAULT_REMOTE
+        - GENERATE_COMPLETIONS
+  - NEW_DEFAULT_REMOTE:
+      long: set-default-remote
+      help: Set the name of the default remote for the repository
+      takes_value: true
       required: false
       conflicts_with:
         - GENERATE_COMPLETIONS
@@ -77,6 +89,7 @@ args:
         - NEW_DOMAIN_KEY
         - CLEAR_DOMAIN_KEY
         - LIST_MR
+        - NEW_DEFAULT_REMOTE
         - GENERATE_COMPLETIONS
       conflicts_with:
         - NEW_PROJECT_ID
@@ -84,4 +97,5 @@ args:
         - NEW_DOMAIN_KEY
         - CLEAR_DOMAIN_KEY
         - LIST_MR
+        - NEW_DEFAULT_REMOTE
         - GENERATE_COMPLETIONS

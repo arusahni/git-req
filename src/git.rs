@@ -28,8 +28,12 @@ fn slugify_domain(domain: &str) -> String {
 pub fn get_remotes() -> HashSet<String> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     match repo.remotes() {
-        Ok(remotes) => remotes.into_iter().filter_map(|rem| rem).map(|rem| String::from(rem)).collect(),
-        Err(_) => HashSet::new()
+        Ok(remotes) => remotes
+            .into_iter()
+            .filter_map(|rem| rem)
+            .map(String::from)
+            .collect(),
+        Err(_) => HashSet::new(),
     }
 }
 
@@ -89,8 +93,7 @@ pub fn get_project_config(field_name: &str) -> Option<String> {
 pub fn set_project_config(field_name: &str, value: &str) {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     let mut cfg = repo.config().unwrap();
-    cfg.set_str(&format!("req.{}", field_name), value)
-        .unwrap();
+    cfg.set_str(&format!("req.{}", field_name), value).unwrap();
 }
 
 /// Get a value for the given global git-req config
@@ -161,10 +164,7 @@ pub fn checkout_branch(
             }
         }
         None => {
-            warn!(
-                "No default remote found. Using {}",
-                remote_name
-            );
+            warn!("No default remote found. Using {}", remote_name);
             format!("{}/{}", remote_name, local_branch_name)
         }
     };

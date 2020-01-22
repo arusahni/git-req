@@ -2,11 +2,11 @@
 mod git;
 mod remotes;
 
-use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
+use clap::{crate_authors, crate_version, load_yaml, App, AppSettings, ArgMatches};
 use colored::*;
 use git2::ErrorCode;
 use log::{debug, error, info, trace};
-use std::io::{self, Cursor, Write};
+use std::io::{self, stdin, stdout, Cursor, Write};
 use std::{env, process};
 use tabwriter::TabWriter;
 
@@ -164,6 +164,36 @@ fn generate_completion(app: &mut App, shell_name: &str) {
     print!("{}", &output);
 }
 
+fn get_remote_name(matches: &ArgMatches) -> String {
+    let default_remote_name = match git::get_project_config("defaultremote") {
+        Some(remote_name) => remote_name,
+        None => {
+            let new_remote_name = match git::guess_default_remote_name() {
+                Ok(guessed) => guessed,
+                Err(_) => {
+                    let mut new_remote_name = String::new();
+                    println!("Multiple remotes detected. Enter the name of the default one.");
+                    for remote in git::get_remotes() {
+                        println!(" * {}", remote);
+                    }
+                    print!("Remote name: ");
+                    let _ = stdout().flush();
+                    stdin().read_line(&mut new_remote_name).expect("Did not input a name");
+                    trace!("New remote: {}", &new_remote_name);
+                    if !git::get_remotes().contains(new_remote_name.trim()) {
+                        panic!("Invalid remote name provided")
+                    }
+                    new_remote_name
+                }
+            };
+            git::set_project_config("defaultremote", &new_remote_name);
+            new_remote_name
+        }
+    };
+    // Not using Clap's default_value because of https://github.com/clap-rs/clap/issues/1140
+    String::from(matches.value_of("REMOTE_NAME").unwrap_or(&default_remote_name))
+}
+
 fn build_cli(cfg: &yaml_rust::Yaml) -> App {
     App::from_yaml(&cfg)
         .version(crate_version!())
@@ -183,25 +213,22 @@ fn main() {
     let app = build_cli(&cfg);
     let matches = app.get_matches();
 
-    // Not using Clap's default_value because of https://github.com/clap-rs/clap/issues/1140
-    let remote_name = matches.value_of("REMOTE_NAME").unwrap_or("origin");
-
     if let Some(project_id) = matches.value_of("NEW_PROJECT_ID") {
-        set_project_id(remote_name, project_id);
+        set_project_id(&get_remote_name(&matches), project_id);
     } else if matches.is_present("CLEAR_PROJECT_ID") {
-        clear_project_id(remote_name);
+        clear_project_id(&get_remote_name(&matches));
     } else if matches.is_present("LIST_MR") {
-        list_open_requests(remote_name);
+        list_open_requests(&get_remote_name(&matches));
     } else if matches.is_present("CLEAR_DOMAIN_KEY") {
-        clear_domain_key(remote_name);
+        clear_domain_key(&get_remote_name(&matches));
     } else if let Some(domain_key) = matches.value_of("NEW_DOMAIN_KEY") {
-        set_domain_key(remote_name, domain_key);
+        set_domain_key(&get_remote_name(&matches), domain_key);
     } else if let Some(shell_name) = matches.value_of("GENERATE_COMPLETIONS") {
         let mut app = build_cli(&cfg);
         generate_completion(&mut app, &shell_name);
     } else {
         checkout_mr(
-            remote_name,
+            &get_remote_name(&matches),
             matches.value_of("REQUEST_ID").unwrap().parse().unwrap(),
         );
     }

@@ -1,9 +1,10 @@
+use std::collections::HashSet;
 use std::path::Path;
 use std::str;
 
 use duct::cmd;
 use git2::{Config, Error, Repository};
-use log::{debug, trace};
+use log::{debug, trace, warn};
 use shellexpand;
 
 /// Update old `req.key` config format to include remote name, i.e, `req.remote_name.key`
@@ -21,6 +22,15 @@ fn migrate_legacy(field_name: &str, remote_name: &str) {
 /// Convert a domain string into a configuration slug
 fn slugify_domain(domain: &str) -> String {
     str::replace(domain, ".", "|")
+}
+
+/// Get the remotes for the repository
+pub fn get_remotes() -> HashSet<String> {
+    let repo = Repository::open_from_env().expect("Couldn't find repository");
+    match repo.remotes() {
+        Ok(remotes) => remotes.into_iter().filter_map(|rem| rem).map(|rem| String::from(rem)).collect(),
+        Err(_) => HashSet::new()
+    }
 }
 
 /// Get the URL of the given remote
@@ -47,7 +57,7 @@ pub fn get_config(field_name: &str, remote_name: &str) -> Option<String> {
     }
 }
 
-/// Set a value for the project-local git-req configuration
+/// Set a value for the project remote-local git-req configuration
 pub fn set_config(field_name: &str, remote_name: &str, value: &str) {
     migrate_legacy(field_name, "origin");
     let repo = Repository::open_from_env().expect("Couldn't find repository");
@@ -62,6 +72,24 @@ pub fn delete_config(field_name: &str, remote_name: &str) {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     let mut cfg = repo.config().unwrap();
     cfg.remove(&format!("req.{}.{}", remote_name, field_name))
+        .unwrap();
+}
+
+/// Get a value for the given project-local git-req config
+pub fn get_project_config(field_name: &str) -> Option<String> {
+    let key = format!("req.{}", field_name);
+    match get_repo_info(&key) {
+        Ok(val) => Some(val),
+        Err(_) => None,
+    }
+}
+
+/// Set a value for the project-local git-req configuration. Consider using `set_config` unless
+/// absolutely necessary.
+pub fn set_project_config(field_name: &str, value: &str) {
+    let repo = Repository::open_from_env().expect("Couldn't find repository");
+    let mut cfg = repo.config().unwrap();
+    cfg.set_str(&format!("req.{}", field_name), value)
         .unwrap();
 }
 
@@ -99,9 +127,9 @@ pub fn delete_req_config(domain: &str, field: &str) -> Result<(), Error> {
     cfg.remove(&format!("req.{}.{}", slug, field))
 }
 
-/// Get the name of the default remote
+/// Guess the name of the default remote
 #[allow(clippy::match_wild_err_arm)]
-pub fn get_default_remote_name() -> Result<String, String> {
+pub fn guess_default_remote_name() -> Result<String, String> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     let remotes = repo.remotes().expect("Couldn't fetch the list of remotes");
     match remotes.len() {
@@ -122,8 +150,8 @@ pub fn checkout_branch(
     is_virtual_remote_branch: bool,
 ) -> Result<bool, String> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
-    let local_branch_name = match get_default_remote_name() {
-        Ok(default_remote_name) => {
+    let local_branch_name = match get_project_config("defaultremote") {
+        Some(default_remote_name) => {
             if remote_name != default_remote_name {
                 trace!("Non-default remote name requested: {}", remote_name);
                 format!("{}/{}", remote_name, local_branch_name)
@@ -132,9 +160,9 @@ pub fn checkout_branch(
                 String::from(local_branch_name)
             }
         }
-        Err(_) => {
-            trace!(
-                "Multiple remotes found, but none named origin: {}",
+        None => {
+            warn!(
+                "No default remote found. Using {}",
                 remote_name
             );
             format!("{}/{}", remote_name, local_branch_name)
@@ -172,6 +200,7 @@ pub fn checkout_branch(
             } else {
                 &origin_with_remote
             };
+            trace!("Checking '{}' as '{}'", remote_ref, local_branch_name);
             match cmd!("git", "checkout", "-b", &local_branch_name, &remote_ref).run() {
                 Ok(_) => Ok(true),
                 Err(err) => Err(format!("Could not check out local branch: {}", err)),

@@ -133,20 +133,21 @@ fn retrieve_gitlab_project_merge_requests(
     remote: &GitLab,
 ) -> Result<Vec<MergeRequest>, &'static str> {
     trace!("Querying GitLab MR for {:?}", remote);
+    let current_page = 1;
     let url = reqwest::Url::parse(&format!(
-        "{}/projects/{}/merge_requests?state=opened",
-        remote.api_root, remote.id
+        "{}/projects/{}/merge_requests?state=opened&per_page=50&page={}",
+        remote.api_root, remote.id, current_page,
     ))
     .unwrap();
     let mut resp = query_gitlab_api(url, remote.api_key.to_string());
     debug!("MR list query response: {:?}", resp);
-    let buf: Vec<GitLabMergeRequest> = match resp.json() {
+    let merge_requests: Vec<GitLabMergeRequest> = match resp.json() {
         Ok(buf) => buf,
         Err(_) => {
             return Err("failed to read response");
         }
     };
-    Ok(buf.into_iter().map(gitlab_to_mr).collect())
+    Ok(merge_requests.into_iter().map(gitlab_to_mr).collect())
 }
 
 /// Search GitLab for the project ID (if the direct lookup didn't work)

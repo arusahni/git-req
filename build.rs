@@ -14,10 +14,9 @@ fn s2y<T: ToString>(s: T) -> Yaml {
 
 fn parse_str<T: ToString>(a: &Hash, k: T) -> String {
     let s = a.get(&s2y(k));
-    if s.is_none() {
-        "".to_string()
-    } else {
-        s.unwrap().as_str().unwrap().to_string()
+    match s {
+        Some(ele) => ele.as_str().unwrap().to_string(),
+        None => "".to_string(),
     }
 }
 
@@ -42,7 +41,7 @@ fn set_args(mut p: Manual, y: &Yaml) -> Manual {
         let arg = val.as_hash().unwrap();
         if arg.get(&s2y("index")).is_none() {
             let takes_value = arg.get(&s2y("takes_value"));
-            if takes_value.is_none() || takes_value.unwrap().as_bool().unwrap() == false {
+            if takes_value.is_none() || !takes_value.unwrap().as_bool().unwrap() {
                 let mut f = Flag::new()
                     .long(parse_str(&arg, "long").as_str())
                     .help(parse_str(&arg, "help").as_str());

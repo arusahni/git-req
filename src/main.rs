@@ -2,13 +2,24 @@
 mod git;
 mod remotes;
 
-use clap::{crate_authors, crate_version, load_yaml, App, AppSettings, ArgMatches};
+use clap::{crate_authors, crate_version, App, AppSettings, ArgMatches, YamlLoader};
 use colored::*;
 use git2::ErrorCode;
+use lazy_static::lazy_static;
 use log::{debug, error, info, trace};
 use std::io::{self, stdin, stdout, Cursor, Write};
-use std::{env, process};
+use std::{env, include_str, process};
 use tabwriter::TabWriter;
+use yaml_rust::Yaml;
+
+lazy_static! {
+    static ref APP_CFG: Yaml = {
+        YamlLoader::load_from_str(include_str!("../cli-flags.yml"))
+            .expect("Failed to load CLI config")
+            .pop()
+            .unwrap()
+    };
+}
 
 /// Get the remote url
 fn get_remote_url(remote_name: &str) -> String {
@@ -171,6 +182,7 @@ fn generate_completion(app: &mut App, shell_name: &str) {
     print!("{}", &output);
 }
 
+/// Get the name of the remote to use for the operation
 fn get_remote_name(matches: &ArgMatches) -> String {
     let default_remote_name = match git::get_project_config("defaultremote") {
         Some(remote_name) => remote_name,
@@ -207,8 +219,9 @@ fn get_remote_name(matches: &ArgMatches) -> String {
     )
 }
 
-fn build_cli(cfg: &yaml_rust::Yaml) -> App {
-    App::from_yaml(&cfg)
+/// Get the Clap app for CLI matching et al.
+fn build_cli<'a>() -> App<'a, 'a> {
+    App::from_yaml(&APP_CFG)
         .version(crate_version!())
         .author(crate_authors!("\n"))
         .setting(AppSettings::ArgsNegateSubcommands)
@@ -222,8 +235,8 @@ fn main() {
         .parse_filters(&env::var("REQ_LOG").unwrap_or_default())
         .try_init();
 
-    let cfg = load_yaml!("../cli-flags.yml");
-    let app = build_cli(&cfg);
+    let mut app = build_cli();
+
     let matches = app.get_matches();
 
     if let Some(project_id) = matches.value_of("NEW_PROJECT_ID") {
@@ -239,7 +252,7 @@ fn main() {
     } else if let Some(remote_name) = matches.value_of("NEW_DEFAULT_REMOTE") {
         set_default_remote(remote_name);
     } else if let Some(shell_name) = matches.value_of("GENERATE_COMPLETIONS") {
-        let mut app = build_cli(&cfg);
+        app = build_cli();
         generate_completion(&mut app, &shell_name);
     } else {
         checkout_mr(

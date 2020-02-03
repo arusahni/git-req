@@ -21,14 +21,9 @@ lazy_static! {
     };
 }
 
-/// Get the remote url
-fn get_remote_url(remote_name: &str) -> String {
-    git::get_remote_url(remote_name)
-}
-
 /// Get the remote for the current project
 fn get_remote(remote_name: &str, fetch_api_key: bool) -> Result<Box<dyn remotes::Remote>, String> {
-    let remote_url = get_remote_url(remote_name);
+    let remote_url = git::get_remote_url(remote_name);
     remotes::get_remote(remote_name, &remote_url, !fetch_api_key)
 }
 

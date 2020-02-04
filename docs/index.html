@@ -36,7 +36,7 @@
     </section>
     <section class="section">
         <div class="container content is-desktop">
-            <h2 class="subtitle">Check out branches by their pull (or merge) request ID</h2>
+            <h2 class="subtitle is-uppercase">Check out branches by their pull (or merge) request ID</h2>
             <p>Don't waste time doing this:
                 <ul>
                     <li>Switching to a browser</li>
@@ -48,12 +48,12 @@
                 </ul>
             </p>
             <p>Instead, run <code>git req REQUEST_NUMBER</code> to check out the corresponding branch.</p>
-            <h2 class="subtitle">Supported services</h2>
+            <h2 class="subtitle is-uppercase">Supported services</h2>
             <ul>
                 <li>GitHub</li>
                 <li>GitLab (both GitLab.com and self-hosted)</li>
             </ul>
-            <h2 class="subtitle">Getting started</h2>
+            <h2 class="subtitle is-uppercase">Getting started</h2>
             <ol>
                 <li><a href="https://github.com/arusahni/git-req/releases/latest">Download the binary for your operating system from the release page.</a> At this time, only Linux and macOS are officially supported. Builds for other platforms are available, but untested.</li>
                 <li>Decompress the archive.</li>
@@ -65,8 +65,15 @@
                 </li>
                 <li>That's it! The first time you run <code>git req REQUEST_NUMBER</code>, it will prompt you for your API credentials if necessary.</li>
             </ol>
-            <h2 class="subtitle">Questions? Issues?</h2>
-            If you have questions, ask on GitHub, or on <a href="https://twitter.com/IAmAru">Twitter</a>. Please file issues on the <a href="https://github.com/arusahni/git-req/issues">GitHub project</a>.
+            <h2 class="subtitle is-uppercase">Other features</h2>
+            <p>In addition to checking out requests by ID, <code>git-req</code> also supports:</p>
+            <ul>
+                <li>Viewing open requests with <code>git req --list</code></li>
+                <li>Targeting different remotes with <code>git req -u</code></li>
+                <li>Generating shell completions <code>git req --completions</code></li>
+            </ul>
+            <h2 class="subtitle is-uppercase">Questions? Issues?</h2>
+            <p>If you have questions, ask on GitHub, or on <a href="https://twitter.com/IAmAru">Twitter</a>. Please file issues on the <a href="https://github.com/arusahni/git-req/issues">GitHub project</a>.</p>
         </div>
     </section>
     <footer class="footer">

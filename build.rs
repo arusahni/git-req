@@ -74,7 +74,7 @@ fn set_args(mut p: Manual, y: &Yaml) -> Manual {
 }
 
 fn generate_manpage(yml: &Yaml, trg_dir: &Path) -> std::io::Result<()> {
-    let out_location = trg_dir.join("git-req.man");
+    let out_location = trg_dir.join("git-req.1");
 
     let page = Manual::new("git-req").about(yml["about"].as_str().unwrap());
     let page = set_authors(page);

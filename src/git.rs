@@ -194,14 +194,22 @@ pub fn checkout_branch(
                 ));
             };
             debug!("Checking out branch: {}", local_branch_name);
+            let mut checkout_args = vec!["checkout"];
             let origin_with_remote = format!("{}/{}", remote_name, remote_branch_name);
-            let remote_ref = if is_virtual_remote_branch {
-                &local_branch_name
+            if is_virtual_remote_branch {
+                checkout_args.push(&local_branch_name);
+                trace!("Checking out branch: {}", local_branch_name);
             } else {
-                &origin_with_remote
+                checkout_args.push("-b");
+                checkout_args.push(&local_branch_name);
+                checkout_args.push(&origin_with_remote);
+                trace!(
+                    "Checking '{}' as '{}'",
+                    origin_with_remote,
+                    local_branch_name
+                );
             };
-            trace!("Checking '{}' as '{}'", remote_ref, local_branch_name);
-            match cmd!("git", "checkout", "-b", &local_branch_name, &remote_ref).run() {
+            match cmd("git", checkout_args).run() {
                 Ok(_) => Ok(true),
                 Err(err) => Err(format!("Could not check out local branch: {}", err)),
             }

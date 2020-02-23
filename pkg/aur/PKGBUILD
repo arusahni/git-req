@@ -1,6 +1,6 @@
 # Maintainer: Aru Sahni <aru@arusahni.net>
 pkgname=git-req
-pkgver=2.0.1
+pkgver=2.2.0rc.2
 pkgrel=1
 epoch=
 pkgdesc="Switch between merge/pull requests in your GitLab and GitHub repositories with just the request ID."
@@ -21,7 +21,7 @@ install=
 changelog=
 source=("$pkgname-$pkgver.tar.gz::https://github.com/arusahni/$pkgname/archive/v$pkgver.tar.gz")
 noextract=()
-sha256sums=('015a5017f1d8dffc2582a10936ad3420c525f6d462e7bb9da13984ecd79f574f')
+sha256sums=('d4929b9215bc40236ebee9b5b495aab9cea7ac624dabe04a16af53948768555f')
 validpgpkeys=()
 
 build() {
@@ -37,6 +37,7 @@ check() {
 package() {
     cd "$pkgname-$pkgver"
     cargo install --root "${pkgdir}"/usr --path "${srcdir}/${pkgname}-${pkgver}"
+    install -D -m644 "${srcdir}/${pkgname}-${pkgver}/target/release/${pkgname}.1" "${pkgdir}/usr/share/man/man1/${pkgname}.1"
     # Random metadata file created by cargo. See https://github.com/rust-lang/cargo/issues/6797
     rm "${pkgdir}"/usr/.crates.toml
 }

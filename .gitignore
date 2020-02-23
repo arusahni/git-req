@@ -1,4 +1,6 @@
-
+pkg/aur/*/
+*.gz
+*.xz
 # Created by https://www.gitignore.io/api/linux,vim,rust
 # Edit at https://www.gitignore.io/?templates=linux,vim,rust
 

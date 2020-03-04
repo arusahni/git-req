@@ -58,12 +58,31 @@ code {
             </ul>
             <h2 class="subtitle is-uppercase">Getting started</h2>
             <ol>
-                <li><a href="https://github.com/arusahni/git-req/releases/latest">Download the binary for your operating system from the release page.</a> At this time, only Linux and macOS are officially supported. Builds for other platforms are available, but untested.</li>
-                <li>Decompress the archive.</li>
-                <li>Place the <code>git-req</code> binary somewhere in your <code>$PATH</code>.
+                <li>Install git-req
                     <ul>
-                        <li>Linux: suggested location <code>/usr/local/bin/</code></li>
-                        <li>macOS: suggested location <code>/usr/local/bin/</code>. This may not exist, so it'll need to be created with <code>mkdir -p /usr/local/bin</code>.</li>
+                        <li>MacOS Homebrew
+                            <ol>
+                                <li><code>brew tap arusahni/git-req</code></li>
+                                <li><code>brew install git-req</code></li>
+                            </ol>
+                        </li>
+                        <li>Arch Linux AUR
+                            <ol>
+                                <li><code>yay -Sy git-req</code></li>
+                            </ol>
+                        </li>
+                        <li>Everyone else...
+                            <ol>
+                                <li><a href="https://github.com/arusahni/git-req/releases/latest">Download the binary for your operating system from the release page.</a> At this time, only Linux and macOS are officially supported. Builds for other platforms are available, but untested.</li>
+                                <li>Decompress the archive.</li>
+                                <li>Place the <code>git-req</code> executable somewhere in your <code>$PATH</code>.
+                                    <ul>
+                                        <li>Linux: suggested location <code>/usr/local/bin/</code></li>
+                                        <li>macOS: suggested location <code>/usr/local/bin/</code>. This may not exist, so it'll need to be created with <code>mkdir -p /usr/local/bin</code>.</li>
+                                    </ul>
+                                </li>
+                            </ol>
+                        </li>
                     </ul>
                 </li>
                 <li>That's it! The first time you run <code>git req REQUEST_NUMBER</code>, it will prompt you for your API credentials if necessary.</li>

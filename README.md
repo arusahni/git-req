@@ -32,9 +32,19 @@ That's exactly what `git-req` does.
 Installation
 ------------
 
-1. [Download the binary for your operating system from the release page](https://github.com/arusahni/git-req/releases/latest).
-2. Decompress the archive.
-3. Place the `git-req` executable somewhere in your `$PATH`.
+1. Install it:
+    * Homebrew (MacOS)
+        1. `brew tap install arusahni/git-req`
+        2. `brew install git-req`
+    * AUR (Arch Linux)
+        1. `yay -Sy git-req`
+    * DEB (Debian / Ubuntu Linux)
+        1. [Download the `*.deb` file from the release page](https://github.com/arusahni/git-req/releases/latest).
+        2. `dpkg -i /path/to/file.deb`
+    * Everyone else
+        1. [Download the binary for your operating system from the release page](https://github.com/arusahni/git-req/releases/latest)
+        2. Decompress the archive
+        3. Place the `git-req` executable somewhere in your `$PATH`
 
 The first time you run `git req <#>` it will prompt you for API credentials;
 use a Personal Access Token.

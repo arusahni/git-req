@@ -13,6 +13,10 @@ edition = "2018"
 exclude = ["ci/**/*", "docs/**/*", "appveyor.yml", ".travis.yml", "pkg/**/*"]
 build = "build.rs"
 
+[profile.release]
+lto = true
+opt-level = "s"
+
 [badges]
 travis-ci = { repository = "arusahni/git-req" }
 appveyor = { repository = "arusahni/git-req" }

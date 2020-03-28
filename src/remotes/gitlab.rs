@@ -2,8 +2,9 @@ use crate::git;
 use crate::remotes::{MergeRequest, Remote};
 use log::{debug, error, trace};
 use regex::Regex;
-use reqwest;
 use serde_derive::{Deserialize, Serialize};
+use serde_json;
+use ureq;
 
 #[derive(Debug)]
 pub struct GitLab {
@@ -80,26 +81,23 @@ impl Remote for GitLab {
 }
 
 /// Query the GitLab API
-fn query_gitlab_api(url: reqwest::Url, token: String) -> reqwest::Response {
-    let client = reqwest::Client::new();
-    client
-        .get(url)
-        .header("PRIVATE-TOKEN", token)
-        .send()
-        .expect("failed to send request")
+fn query_gitlab_api(url: &str, token: &str) -> Result<ureq::Response, ureq::Response> {
+    let response = ureq::get(url).set("PRIVATE-TOKEN", &token).call();
+    if response.error() {
+        return Err(response);
+    }
+    Ok(response)
 }
 
 /// Query the GitLab API for remote's project
 fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
     trace!("Querying GitLab Project API for {:?}", remote);
-    let url = reqwest::Url::parse(&format!(
+    let url = &format!(
         "{}/projects/{}%2F{}",
         remote.api_root, remote.namespace, remote.name
-    ))
-    .unwrap();
-    let mut resp = query_gitlab_api(url, remote.api_key.to_string());
-    debug!("Project ID query response: {:?}", resp);
-    if !resp.status().is_success() {
+    );
+    let resp = query_gitlab_api(url, &remote.api_key);
+    if resp.is_err() {
         match search_gitlab_project_id(remote) {
             Ok(id) => {
                 return Ok(id);
@@ -113,7 +111,13 @@ fn query_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
             }
         }
     }
-    let buf: GitLabProject = resp.json().expect("failed to read response");
+    let buf: GitLabProject = match resp.unwrap().into_json() {
+        // "safe" unwrap since we test is_err above
+        Ok(buf) => serde_json::from_value(buf).expect("failed to decode response"),
+        Err(_) => {
+            return Err("failed to read response");
+        }
+    };
     debug!("{:?}", buf);
     Ok(buf.id)
 }
@@ -134,16 +138,22 @@ fn retrieve_gitlab_project_merge_requests(
 ) -> Result<Vec<MergeRequest>, &'static str> {
     trace!("Querying GitLab MR for {:?}", remote);
     let current_page = 1;
-    let url = reqwest::Url::parse(&format!(
+    let url = &format!(
         "{}/projects/{}/merge_requests?state=opened&per_page=50&page={}",
         remote.api_root, remote.id, current_page,
-    ))
-    .unwrap();
-    let mut resp = query_gitlab_api(url, remote.api_key.to_string());
+    );
+    let resp = query_gitlab_api(url, &remote.api_key);
     debug!("MR list query response: {:?}", resp);
-    let merge_requests: Vec<GitLabMergeRequest> = match resp.json() {
-        Ok(buf) => buf,
-        Err(_) => {
+    let merge_requests: Vec<GitLabMergeRequest> = match resp {
+        Ok(response) => {
+            let buf = response.into_json().expect("malformed API response");
+            serde_json::from_value(buf).expect("failed to decode response")
+        }
+        Err(response) => {
+            debug!("Failed MR list query response: {:?}", response);
+            if response.status() == 404 {
+                return Err("remote project not found");
+            }
             return Err("failed to read response");
         }
     };
@@ -156,34 +166,46 @@ fn search_gitlab_project_id(remote: &GitLab) -> Result<i64, &'static str> {
         "Searching GitLab API for namespace {:?} by project name",
         remote.namespace
     );
-    let url = reqwest::Url::parse(&format!(
-        "{}/namespaces/{}",
-        remote.api_root, remote.namespace
-    ))
-    .unwrap();
-    let mut resp = query_gitlab_api(url, remote.api_key.to_string());
+    let url = &format!("{}/namespaces/{}", remote.api_root, remote.namespace);
+    let resp = query_gitlab_api(url, &remote.api_key);
     debug!("Namespace ID query response: {:?}", resp);
-    if !resp.status().is_success() {
-        return Err("Couldn't find namespace");
-    }
-    let ns_buf: GitLabNamespace = resp.json().expect("failed to read response");
+    let ns_buf: GitLabNamespace = match resp {
+        Ok(response) => match response.into_json() {
+            Ok(buf) => serde_json::from_value(buf).expect("failed to decode response"),
+            Err(_) => {
+                return Err("malformed response received");
+            }
+        },
+        Err(response) => {
+            if response.status() == 404 {
+                return Err("couldn't find namespace");
+            }
+            return Err("failed to read response");
+        }
+    };
     debug!("Querying namespace {:?}", ns_buf);
     let url = match ns_buf.kind.as_ref() {
-        "user" => reqwest::Url::parse(&format!("{}/users/{}/projects", remote.api_root, ns_buf.id))
-            .unwrap(),
-        "group" => reqwest::Url::parse(&format!(
+        "user" => format!("{}/users/{}/projects", remote.api_root, ns_buf.id),
+        "group" => format!(
             "{}/groups/{}/projects?search={}",
             remote.api_root, ns_buf.id, remote.name
-        ))
-        .unwrap(),
+        ),
         _ => {
             error!("Unknown namespace kind {:?}", ns_buf.kind);
             return Err("Unknown namespace");
         }
     };
-    let mut resp = query_gitlab_api(url, remote.api_key.to_string());
+    let resp = query_gitlab_api(&url, &remote.api_key);
     debug!("Project ID query response: {:?}", resp);
-    let projects: Vec<GitLabProject> = resp.json().expect("failed to read projects response");
+    let projects: Vec<GitLabProject> = match resp {
+        Ok(response) => match response.into_json() {
+            Ok(buf) => serde_json::from_value(buf).expect("failed to decode projects response"),
+            Err(_) => return Err("malformed projects response"),
+        },
+        Err(_) => {
+            return Err("failed to read projects response");
+        }
+    };
     match projects.iter().find(|&prj| prj.name == remote.name) {
         Some(project) => Ok(project.id),
         None => Err("Couldn't find project"),
@@ -203,20 +225,14 @@ pub fn load_project_id(remote_name: &str) -> Option<String> {
 
 /// Query the GitLab API for the branch corresponding to the MR
 fn query_gitlab_branch_name(remote: &GitLab, mr_id: i64) -> Result<String, &str> {
-    let client = reqwest::Client::new();
-    let url = reqwest::Url::parse(&format!(
+    let url = &format!(
         "{}/projects/{}/merge_requests/{}",
         remote.api_root, remote.id, mr_id
-    ))
-    .unwrap();
-    let mut resp = client
-        .get(url)
-        .header("PRIVATE-TOKEN", remote.api_key.to_string())
-        .send()
-        .expect("failed to send request");
+    );
+    let resp = ureq::get(url).set("PRIVATE-TOKEN", &remote.api_key).call();
     debug!("Response: {:?}", resp);
-    let buf: GitLabMergeRequest = match resp.json() {
-        Ok(buf) => buf,
+    let buf: GitLabMergeRequest = match resp.into_json() {
+        Ok(buf) => serde_json::from_value(buf).expect("failed to decode response"),
         Err(_) => {
             return Err("failed to read response");
         }

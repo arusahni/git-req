@@ -1,8 +1,9 @@
 use crate::remotes::{MergeRequest, Remote};
 use log::{debug, trace};
 use regex::Regex;
-use reqwest;
 use serde_derive::{Deserialize, Serialize};
+use serde_json;
+use ureq;
 
 #[derive(Debug)]
 pub struct GitHub {
@@ -64,13 +65,15 @@ fn github_to_mr(req: GitHubPullRequest) -> MergeRequest {
 }
 
 /// Query the GitHub API
-fn query_github_api(url: reqwest::Url, token: String) -> reqwest::Response {
-    let client = reqwest::Client::new();
-    client
-        .get(url)
-        .header("Authorization", format!("token {}", token))
-        .send()
-        .expect("failed to send request")
+fn query_github_api(url: &str, token: &str) -> Result<ureq::Response, ureq::Response> {
+    trace!("Querying {}", url);
+    let response = ureq::get(url)
+        .set("Authorization", &format!("token {}", token))
+        .call();
+    if response.error() {
+        return Err(response);
+    }
+    Ok(response)
 }
 
 /// Get the pull requests for the current project
@@ -78,16 +81,22 @@ fn retrieve_github_project_pull_requests(
     remote: &GitHub,
 ) -> Result<Vec<MergeRequest>, &'static str> {
     trace!("Querying for GitHub PR for {:?}", remote);
-    let url = reqwest::Url::parse(&format!("{}/{}/pulls", remote.api_root, remote.id)).unwrap();
-    let mut resp = query_github_api(url, remote.api_key.to_string());
-    debug!("PR list query response: {:?}", resp);
-    let buf: Vec<GitHubPullRequest> = match resp.json() {
-        Ok(buf) => buf,
-        Err(_) => {
+    let url = &format!("{}/{}/pulls", remote.api_root, remote.id);
+    let gprs: Vec<GitHubPullRequest> = match query_github_api(url, &remote.api_key) {
+        Ok(response) => {
+            debug!("Successful PR list query response: {:?}", response);
+            let buf = response.into_json().expect("malformed API response");
+            serde_json::from_value(buf).expect("failed to decode API response")
+        }
+        Err(response) => {
+            debug!("Failed PR list query response: {:?}", response);
+            if response.status() == 404 {
+                return Err("remote project not found");
+            }
             return Err("failed to read API response");
         }
     };
-    Ok(buf.into_iter().map(github_to_mr).collect())
+    Ok(gprs.into_iter().map(github_to_mr).collect())
 }
 
 /// Extract the project name from a Github origin URL

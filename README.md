@@ -34,7 +34,7 @@ Installation
 
 1. Install it:
     * Homebrew (MacOS)
-        1. `brew tap install arusahni/git-req`
+        1. `brew tap arusahni/git-req`
         2. `brew install git-req`
     * AUR (Arch Linux)
         1. `yay -Sy git-req`

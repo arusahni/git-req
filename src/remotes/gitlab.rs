@@ -3,8 +3,6 @@ use crate::remotes::{MergeRequest, Remote};
 use log::{debug, error, trace};
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
-use serde_json;
-use ureq;
 
 #[derive(Debug)]
 pub struct GitLab {

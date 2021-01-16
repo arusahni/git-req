@@ -5,7 +5,6 @@ use std::str;
 use duct::cmd;
 use git2::{Config, Error, Repository};
 use log::{debug, trace, warn};
-use shellexpand;
 
 /// Update old `req.key` config format to include remote name, i.e, `req.remote_name.key`
 fn migrate_legacy(field_name: &str, remote_name: &str) {

@@ -46,22 +46,26 @@ fn set_args(mut p: Manual, y: &Yaml) -> Manual {
                     .long(parse_str(&arg, "long").as_str())
                     .help(parse_str(&arg, "help").as_str());
                 let short = parse_str(&arg, "short");
-                if short != "" {
+                if !short.is_empty() {
                     f = f.short(short.as_str());
                 }
                 p = p.flag(f);
             } else {
                 let o_val = parse_str(&arg, "value_name");
-                let key = if o_val != "" { o_val.as_str() } else { key };
+                let key = if !o_val.is_empty() {
+                    o_val.as_str()
+                } else {
+                    key
+                };
                 let mut o = Opt::new(key)
                     .long(parse_str(&arg, "long").as_str())
                     .help(parse_str(&arg, "help").as_str());
                 let short = parse_str(&arg, "short");
                 let default_value = parse_str(&arg, "default_value");
-                if short != "" {
+                if !short.is_empty() {
                     o = o.short(short.as_str());
                 }
-                if default_value != "" {
+                if !default_value.is_empty() {
                     o = o.default_value(default_value.as_str());
                 }
                 p = p.option(o);

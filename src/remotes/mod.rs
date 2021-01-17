@@ -1,4 +1,5 @@
 use crate::git;
+use anyhow::{anyhow, Result};
 use log::{info, trace};
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
@@ -18,16 +19,16 @@ pub struct MergeRequest {
 
 pub trait Remote {
     /// Get the ID of the project associated with the repository
-    fn get_project_id(&mut self) -> Result<&str, &str>;
+    fn get_project_id(&mut self) -> Result<&str>;
 
     /// Get the local branch associated with the merge request having the given ID
-    fn get_local_req_branch(&mut self, mr_id: i64) -> Result<String, &str>;
+    fn get_local_req_branch(&mut self, mr_id: i64) -> Result<String>;
 
     /// Get the remote branch associated with the merge request having the given ID
-    fn get_remote_req_branch(&mut self, mr_id: i64) -> Result<String, &str>;
+    fn get_remote_req_branch(&mut self, mr_id: i64) -> Result<String>;
 
     /// Get the names of the merge/pull requests opened against the remote
-    fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str>;
+    fn get_req_names(&mut self) -> Result<Vec<MergeRequest>>;
 
     /// Determine if the branch names are useful to display
     fn has_useful_branch_names(&mut self) -> bool;
@@ -55,11 +56,11 @@ impl fmt::Debug for dyn Remote {
 }
 
 /// Get the domain from an origin URL
-pub fn get_domain(origin: &str) -> Result<&str, String> {
+pub fn get_domain(origin: &str) -> Result<&str> {
     let domain_regex = Regex::new(r"((http[s]?|ssh)://)?(\S+@)?(?P<domain>([^:/])+)").unwrap();
     let captures = domain_regex.captures(origin);
     if captures.is_none() {
-        return Err(String::from("invalid remote set"));
+        return Err(anyhow!("invalid remote set"));
     }
     Ok(captures.unwrap().name("domain").map_or("", |x| x.as_str()))
 }
@@ -84,19 +85,15 @@ fn get_api_key(domain: &str) -> String {
 }
 
 /// Get a remote struct from an origin URL
-pub fn get_remote(
-    remote_name: &str,
-    origin: &str,
-    skip_api_key: bool,
-) -> Result<Box<dyn Remote>, String> {
+pub fn get_remote(remote_name: &str, origin: &str, skip_api_key: bool) -> Result<Box<dyn Remote>> {
     let domain = get_domain(origin)?;
     Ok(match domain {
         "github.com" => {
             let name = match github::get_github_project_name(origin) {
                 Some(name) => name,
                 None => {
-                    return Err(String::from(
-                        "Could not parse the GitHub project name from the origin.",
+                    return Err(anyhow!(
+                        "Could not parse the GitHub project name from the origin."
                     ));
                 }
             };
@@ -120,16 +117,16 @@ pub fn get_remote(
             let namespace = match gitlab::get_gitlab_project_namespace(origin) {
                 Some(ns) => ns,
                 None => {
-                    return Err(String::from(
-                        "Could not parse the GitLab project namespace from the origin.",
+                    return Err(anyhow!(
+                        "Could not parse the GitLab project namespace from the origin."
                     ));
                 }
             };
             let name = match gitlab::get_gitlab_project_name(origin) {
                 Some(name) => name,
                 None => {
-                    return Err(String::from(
-                        "Could not parse the GitLab project name from the origin.",
+                    return Err(anyhow!(
+                        "Could not parse the GitLab project name from the origin."
                     ));
                 }
             };

@@ -2,6 +2,7 @@
 mod git;
 mod remotes;
 
+use anyhow::Result;
 use clap::{crate_authors, crate_version, App, AppSettings, ArgMatches, YamlLoader};
 use colored::*;
 use git2::ErrorCode;
@@ -22,7 +23,7 @@ lazy_static! {
 }
 
 /// Get the remote for the current project
-fn get_remote(remote_name: &str, fetch_api_key: bool) -> Result<Box<dyn remotes::Remote>, String> {
+fn get_remote(remote_name: &str, fetch_api_key: bool) -> Result<Box<dyn remotes::Remote>> {
     let remote_url = git::get_remote_url(remote_name);
     remotes::get_remote(remote_name, &remote_url, !fetch_api_key)
 }
@@ -71,16 +72,14 @@ fn checkout_mr(remote_name: &str, mr_id: i64) {
         &remote.get_local_req_branch(mr_id).unwrap(),
         remote.has_virtual_remote_branch_names(),
     ) {
-        Ok(_) => {
-            info!("Done!");
-        }
-        Err(error) => {
+        Err(err) => {
             eprintln!(
                 "{}",
-                format!("There was an error checking out the branch: {}", &error).red()
+                format!("There was an error checking out the branch: {}", err).red()
             );
             process::exit(1)
         }
+        Ok(_) => info!("Done!"),
     };
 }
 

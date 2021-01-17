@@ -1,4 +1,5 @@
 use crate::remotes::{MergeRequest, Remote};
+use anyhow::{anyhow, Result};
 use log::{debug, trace};
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
@@ -27,19 +28,19 @@ impl Remote for GitHub {
         &self.domain
     }
 
-    fn get_project_id(&mut self) -> Result<&str, &str> {
+    fn get_project_id(&mut self) -> Result<&str> {
         Ok(&self.id)
     }
 
-    fn get_local_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
+    fn get_local_req_branch(&mut self, mr_id: i64) -> Result<String> {
         Ok(format!("pr/{mr_id}", mr_id = mr_id))
     }
 
-    fn get_remote_req_branch(&mut self, mr_id: i64) -> Result<String, &str> {
+    fn get_remote_req_branch(&mut self, mr_id: i64) -> Result<String> {
         Ok(format!("pull/{mr_id}/head", mr_id = mr_id))
     }
 
-    fn get_req_names(&mut self) -> Result<Vec<MergeRequest>, &str> {
+    fn get_req_names(&mut self) -> Result<Vec<MergeRequest>> {
         retrieve_github_project_pull_requests(self)
     }
 
@@ -75,9 +76,7 @@ fn query_github_api(url: &str, token: &str) -> Result<ureq::Response, ureq::Resp
 }
 
 /// Get the pull requests for the current project
-fn retrieve_github_project_pull_requests(
-    remote: &GitHub,
-) -> Result<Vec<MergeRequest>, &'static str> {
+fn retrieve_github_project_pull_requests(remote: &GitHub) -> Result<Vec<MergeRequest>> {
     trace!("Querying for GitHub PR for {:?}", remote);
     let url = &format!("{}/{}/pulls", remote.api_root, remote.id);
     let gprs: Vec<GitHubPullRequest> = match query_github_api(url, &remote.api_key) {
@@ -89,9 +88,9 @@ fn retrieve_github_project_pull_requests(
         Err(response) => {
             debug!("Failed PR list query response: {:?}", response);
             if response.status() == 404 {
-                return Err("remote project not found");
+                return Err(anyhow!("remote project not found"));
             }
-            return Err("failed to read API response");
+            return Err(anyhow!("failed to read API response"));
         }
     };
     Ok(gprs.into_iter().map(github_to_mr).collect())

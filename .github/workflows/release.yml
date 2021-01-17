@@ -1,0 +1,76 @@
+name: Create release
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  RUST_BACKTRACE: full
+
+jobs:
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+    outputs:
+      release_upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: "Release ${{ github.ref }}"
+          body: "<INSERT RELEASE DETAILS HERE>"
+          draft: true
+          prerelease: false
+
+  build:
+    name: Build and upload the binary
+    runs-on: ${{ matrix.os }}
+    needs: release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset_name: git-req-${{ github.ref }}-linux-amd64
+          - os: macos-latest
+            asset_name: git-req-${{ github.ref }}-macos-amd64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build project
+        run: cargo build --release --locked
+      - name: Create archive
+        run: tar czf ${{ matrix.asset_name }}.tar.gz -C target/release/ git-req
+      - name: Upload binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.release_upload_url }}
+          asset_path: ${{ matrix.asset_name }}.tar.gz
+          asset_name: ${{ matrix.asset_name }}.tar.gz
+          asset_content_type: application/octet-stream
+
+  build-win:
+    name: Build and upload the Windows binary
+    runs-on: windows-latest
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build project
+        run: cargo build --release --locked
+      - name: Upload binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.release_upload_url }}
+          asset_path: target/release/git-req.exe
+          asset_name: git-req.exe
+          asset_content_type: application/vnd.microsoft.portable-executable
+

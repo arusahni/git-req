@@ -49,7 +49,7 @@ pub fn get_repo_info(repo_field: &str) -> Result<String> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     let cfg = repo.config().unwrap();
     cfg.get_string(repo_field)
-        .or_else(|err| Err(anyhow!(err.to_string())))
+        .map_err(|err| anyhow!(err.to_string()))
 }
 
 /// Get a value for the given project-local git-req config

@@ -178,39 +178,32 @@ fn generate_completion(app: &mut App, shell_name: &str) {
 
 /// Get the name of the remote to use for the operation
 fn get_remote_name(matches: &ArgMatches) -> String {
-    let default_remote_name = match git::get_project_config("defaultremote") {
-        Some(remote_name) => remote_name,
-        None => {
-            let new_remote_name = match git::guess_default_remote_name() {
-                Ok(guessed) => guessed,
-                Err(_) => {
-                    let mut new_remote_name = String::new();
-                    println!("Multiple remotes detected. Enter the name of the default one.");
-                    for remote in git::get_remotes() {
-                        println!(" * {}", remote);
-                    }
-                    print!("Remote name: ");
-                    let _ = stdout().flush();
-                    stdin()
-                        .read_line(&mut new_remote_name)
-                        .expect("Did not input a name");
-                    trace!("New remote: {}", &new_remote_name);
-                    if !git::get_remotes().contains(new_remote_name.trim()) {
-                        panic!("Invalid remote name provided")
-                    }
-                    new_remote_name
-                }
-            };
-            git::set_project_config("defaultremote", &new_remote_name);
+    let default_remote_name = git::get_project_config("defaultremote").unwrap_or_else(|| {
+        let new_remote_name = git::guess_default_remote_name().unwrap_or_else(|_| {
+            let mut new_remote_name = String::new();
+            println!("Multiple remotes detected. Enter the name of the default one.");
+            for remote in git::get_remotes() {
+                println!(" * {}", remote);
+            }
+            print!("Remote name: ");
+            let _ = stdout().flush();
+            stdin()
+                .read_line(&mut new_remote_name)
+                .expect("Did not input a name");
+            trace!("New remote: {}", &new_remote_name);
+            if !git::get_remotes().contains(new_remote_name.trim()) {
+                panic!("Invalid remote name provided")
+            }
             new_remote_name
-        }
-    };
+        });
+        git::set_project_config("defaultremote", &new_remote_name);
+        new_remote_name
+    });
     // Not using Clap's default_value because of https://github.com/clap-rs/clap/issues/1140
-    String::from(
-        matches
-            .value_of("REMOTE_NAME")
-            .unwrap_or(&default_remote_name),
-    )
+    matches
+        .value_of("REMOTE_NAME")
+        .unwrap_or(&default_remote_name)
+        .to_string()
 }
 
 /// Get the Clap app for CLI matching et al.

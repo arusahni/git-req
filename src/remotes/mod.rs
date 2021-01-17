@@ -58,30 +58,26 @@ impl fmt::Debug for dyn Remote {
 /// Get the domain from an origin URL
 pub fn get_domain(origin: &str) -> Result<&str> {
     let domain_regex = Regex::new(r"((http[s]?|ssh)://)?(\S+@)?(?P<domain>([^:/])+)").unwrap();
-    let captures = domain_regex.captures(origin);
-    if captures.is_none() {
-        return Err(anyhow!("invalid remote set"));
+    match domain_regex.captures(origin) {
+        Some(captures) => Ok(captures.name("domain").map_or("", |x| x.as_str())),
+        None => Err(anyhow!("invalid remote set")),
     }
-    Ok(captures.unwrap().name("domain").map_or("", |x| x.as_str()))
 }
 
 /// Get the API key for the given domain. If absent, prompt.
 fn get_api_key(domain: &str) -> String {
-    match git::get_req_config(&domain, "apikey") {
-        Some(key) => key,
-        None => {
-            let mut newkey = String::new();
-            println!("No API token for {} found. See https://github.com/arusahni/git-req/wiki/API-Keys for instructions.", domain);
-            print!("{} API token: ", domain);
-            let _ = stdout().flush();
-            stdin()
-                .read_line(&mut newkey)
-                .expect("Did not input a correct key");
-            trace!("New Key: {}", &newkey);
-            git::set_req_config(&domain, "apikey", &newkey.trim());
-            String::from(newkey.trim())
-        }
-    }
+    git::get_req_config(&domain, "apikey").unwrap_or_else(|| {
+        let mut newkey = String::new();
+        println!("No API token for {} found. See https://github.com/arusahni/git-req/wiki/API-Keys for instructions.", domain);
+        print!("{} API token: ", domain);
+        let _ = stdout().flush();
+        stdin()
+            .read_line(&mut newkey)
+            .expect("Did not input a correct key");
+        trace!("New Key: {}", &newkey);
+        git::set_req_config(&domain, "apikey", &newkey.trim());
+        newkey.trim().to_string()
+    })
 }
 
 /// Get a remote struct from an origin URL

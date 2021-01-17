@@ -249,10 +249,9 @@ pub fn get_gitlab_project_name(origin: &str) -> Option<String> {
 pub fn get_gitlab_project_namespace(origin: &str) -> Option<String> {
     trace!("Getting project namespace for: {}", origin);
     let project_regex = Regex::new(r".*[/:](\S+)/\S+(\.git)?$").unwrap();
-    match project_regex.captures(origin) {
-        Some(captures) => Some(String::from(&captures[1])),
-        None => None,
-    }
+    project_regex
+        .captures(origin)
+        .map(|captures| String::from(&captures[1]))
 }
 
 #[cfg(test)]

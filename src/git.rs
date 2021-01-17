@@ -56,10 +56,7 @@ pub fn get_repo_info(repo_field: &str) -> Result<String> {
 pub fn get_config(field_name: &str, remote_name: &str) -> Option<String> {
     migrate_legacy(field_name, "origin");
     let key = format!("req.{}.{}", remote_name, field_name);
-    match get_repo_info(&key) {
-        Ok(val) => Some(val),
-        Err(_) => None,
-    }
+    get_repo_info(&key).ok()
 }
 
 /// Set a value for the project remote-local git-req configuration
@@ -83,10 +80,7 @@ pub fn delete_config(field_name: &str, remote_name: &str) {
 /// Get a value for the given project-local git-req config
 pub fn get_project_config(field_name: &str) -> Option<String> {
     let key = format!("req.{}", field_name);
-    match get_repo_info(&key) {
-        Ok(val) => Some(val),
-        Err(_) => None,
-    }
+    get_repo_info(&key).ok()
 }
 
 /// Set a value for the project-local git-req configuration. Consider using `set_config` unless
@@ -104,10 +98,7 @@ pub fn get_req_config(domain: &str, field: &str) -> Option<String> {
         &shellexpand::tilde("~/.gitreqconfig").to_string(),
     ))
     .unwrap();
-    match cfg.get_string(&format!("req.{}.{}", slug, field)) {
-        Ok(val) => Some(val),
-        Err(_) => None,
-    }
+    cfg.get_string(&format!("req.{}.{}", slug, field)).ok()
 }
 
 /// Set a value for the global git-req configuration

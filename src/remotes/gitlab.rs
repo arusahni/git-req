@@ -1,8 +1,8 @@
 use crate::git;
 use crate::remotes::{MergeRequest, Remote};
 use anyhow::{anyhow, Result};
+use git_url_parse::GitUrl;
 use log::{debug, error, trace};
-use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -240,18 +240,22 @@ fn query_gitlab_branch_name(remote: &GitLab, mr_id: i64) -> Result<String> {
 /// Extract the project name from a GitLab origin URL
 pub fn get_gitlab_project_name(origin: &str) -> Option<String> {
     trace!("Getting project name for: {}", origin);
-    let project_regex = Regex::new(r".*/(\S+?)(\.git)?$").unwrap();
-    let captures = project_regex.captures(origin)?;
-    Some(String::from(&captures[1]))
+    GitUrl::parse(origin).map(|parsed| parsed.name).ok()
 }
 
 /// Extract the project namespace from a GitLab origin URL
 pub fn get_gitlab_project_namespace(origin: &str) -> Option<String> {
     trace!("Getting project namespace for: {}", origin);
-    let project_regex = Regex::new(r".*[/:](\S+)/\S+(\.git)?$").unwrap();
-    project_regex
-        .captures(origin)
-        .map(|captures| String::from(&captures[1]))
+    GitUrl::parse(origin)
+        .map(|parsed| {
+            parsed
+                .path
+                .split("/".chars().next().unwrap())
+                .find(|s| !s.is_empty())
+                .unwrap()
+                .to_owned()
+        })
+        .ok()
 }
 
 #[cfg(test)]
@@ -310,6 +314,13 @@ mod tests {
     #[test]
     fn test_get_gitlab_project_name_ssh_no_git() {
         let ns = get_gitlab_project_name("git@gitlab.com:my_namespace/my_project");
+        assert!(ns.is_some());
+        assert_eq!("my_project", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_name_ssh_nested() {
+        let ns = get_gitlab_project_name("git@gitlab.com:my_namespace/my_org/my_project.git");
         assert!(ns.is_some());
         assert_eq!("my_project", ns.unwrap());
     }

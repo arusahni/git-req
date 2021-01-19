@@ -126,11 +126,18 @@ pub fn get_remote(remote_name: &str, origin: &str, skip_api_key: bool) -> Result
                     ));
                 }
             };
+            let full_path = match gitlab::get_gitlab_project_full_path(origin) {
+                Some(full_path) => full_path,
+                None => {
+                    return Err(anyhow!("Could not parse the GitLab path from the origin."));
+                }
+            };
             let mut remote = gitlab::GitLab {
                 id: String::from(""),
                 domain: String::from(gitlab_domain),
                 name,
                 namespace,
+                full_path,
                 origin: String::from(origin),
                 api_root: format!("https://{}/api/v4", gitlab_domain),
                 api_key: String::from(""),

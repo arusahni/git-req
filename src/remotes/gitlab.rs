@@ -11,6 +11,7 @@ pub struct GitLab {
     pub domain: String,
     pub name: String,
     pub namespace: String,
+    pub full_path: String,
     pub origin: String,
     pub api_root: String,
     pub api_key: String,
@@ -91,12 +92,17 @@ fn query_gitlab_api(url: &str, token: &str) -> Result<ureq::Response, ureq::Resp
 /// Query the GitLab API for remote's project
 fn query_gitlab_project_id(remote: &GitLab) -> Result<i64> {
     trace!("Querying GitLab Project API for {:?}", remote);
+    // First, attempt a lookup by the full project path
     let url = &format!(
-        "{}/projects/{}%2F{}",
-        remote.api_root, remote.namespace, remote.name
+        "{}/projects/{}",
+        remote.api_root,
+        remote.full_path.replace("/", "%2F")
     );
+    trace!("Attempting direct project ID lookup: {}", url);
     let resp = query_gitlab_api(url, &remote.api_key);
+    // If not found, attempt to search for it
     if resp.is_err() {
+        trace!("Direct lookup unsuccessful. Attempting search strategy.");
         match search_gitlab_project_id(remote) {
             Ok(id) => {
                 return Ok(id);
@@ -110,6 +116,7 @@ fn query_gitlab_project_id(remote: &GitLab) -> Result<i64> {
             }
         }
     }
+    trace!("Direct lookup successful.");
     let buf: GitLabProject = match resp.unwrap().into_json() {
         // "safe" unwrap since we test is_err above
         Ok(buf) => serde_json::from_value(buf).expect("failed to decode response"),
@@ -117,7 +124,7 @@ fn query_gitlab_project_id(remote: &GitLab) -> Result<i64> {
             return Err(anyhow!("failed to read response"));
         }
     };
-    debug!("{:?}", buf);
+    debug!("Direct lookup response: {:?}", buf);
     Ok(buf.id)
 }
 
@@ -258,6 +265,19 @@ pub fn get_gitlab_project_namespace(origin: &str) -> Option<String> {
         .ok()
 }
 
+pub fn get_gitlab_project_full_path(origin: &str) -> Option<String> {
+    trace!("Getting full path for: {}", origin);
+    GitUrl::parse(origin)
+        .map(|parsed| {
+            parsed
+                .path
+                .trim_start_matches("/".chars().next().unwrap())
+                .trim_end_matches(".git")
+                .to_owned()
+        })
+        .ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -286,6 +306,13 @@ mod tests {
     #[test]
     fn test_get_gitlab_project_namespace_ssh_no_git() {
         let ns = get_gitlab_project_namespace("git@gitlab.com:my_namespace/my_project");
+        assert!(ns.is_some());
+        assert_eq!("my_namespace", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_namespace_nested() {
+        let ns = get_gitlab_project_namespace("git@gitlab.com:my_namespace/my_org/my_project.git");
         assert!(ns.is_some());
         assert_eq!("my_namespace", ns.unwrap());
     }
@@ -323,5 +350,40 @@ mod tests {
         let ns = get_gitlab_project_name("git@gitlab.com:my_namespace/my_org/my_project.git");
         assert!(ns.is_some());
         assert_eq!("my_project", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_full_path_https() {
+        let ns = get_gitlab_project_full_path("https://gitlab.com/my_namespace/my_project");
+        assert!(ns.is_some());
+        assert_eq!("my_namespace/my_project", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_full_path_https_nested() {
+        let ns = get_gitlab_project_full_path("https://gitlab.com/my_namespace/my_org/my_project");
+        assert!(ns.is_some());
+        assert_eq!("my_namespace/my_org/my_project", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_full_path_ssh() {
+        let ns = get_gitlab_project_full_path("git@gitlab.com:my_namespace/my_project.git");
+        assert!(ns.is_some());
+        assert_eq!("my_namespace/my_project", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_full_path_ssh_nested() {
+        let ns = get_gitlab_project_full_path("git@gitlab.com:my_namespace/my_org/my_project.git");
+        assert!(ns.is_some());
+        assert_eq!("my_namespace/my_org/my_project", ns.unwrap());
+    }
+
+    #[test]
+    fn test_get_gitlab_project_full_path_ssh_no_git_nested() {
+        let ns = get_gitlab_project_full_path("git@gitlab.com:my_namespace/my_org/my_project");
+        assert!(ns.is_some());
+        assert_eq!("my_namespace/my_org/my_project", ns.unwrap());
     }
 }

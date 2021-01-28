@@ -3,6 +3,7 @@ use crate::remotes::{MergeRequest, Remote};
 use anyhow::{anyhow, Result};
 use git_url_parse::GitUrl;
 use log::{debug, error, trace};
+use logchop::*;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -218,13 +219,7 @@ fn search_gitlab_project_id(remote: &GitLab) -> Result<i64> {
 
 /// Get the project ID for the specified remote from config
 pub fn load_project_id(remote_name: &str) -> Option<String> {
-    match git::get_config("projectid", remote_name) {
-        Some(project_id) => Some(project_id),
-        None => {
-            debug!("No project ID found");
-            None
-        }
-    }
+    git::get_config("projectid", remote_name).debug_none("No project ID found")
 }
 
 /// Query the GitLab API for the branch corresponding to the MR

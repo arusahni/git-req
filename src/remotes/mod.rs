@@ -1,6 +1,7 @@
 use crate::git;
 use anyhow::{anyhow, Result};
 use log::{info, trace};
+use logchop::*;
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
@@ -153,13 +154,9 @@ pub fn get_remote(remote_name: &str, origin: &str, skip_api_key: bool) -> Result
                     if skip_api_key {
                         String::from("")
                     } else {
-                        let project_id_str = match remote.get_project_id() {
-                            Ok(id_str) => Ok(id_str),
-                            Err(e) => {
-                                info!("Error getting project ID: {:?}", e);
-                                Err(e)
-                            }
-                        }?;
+                        let project_id_str = remote
+                            .get_project_id()
+                            .info_err("Error getting project ID")?;
                         git::set_config("projectid", remote_name, project_id_str);
                         String::from(project_id_str)
                     }

@@ -462,6 +462,7 @@ dependencies = [
  "git2",
  "lazy_static",
  "log",
+ "logchop",
  "man",
  "regex 0.2.11",
  "serde",
@@ -650,6 +651,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "logchop"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c19988123e2ffbf2fa99b25629204376c5a554f25855c08f02c2283f8edc0452"
+dependencies = [
+ "log",
+ "paste",
+]
+
+[[package]]
 name = "man"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -803,6 +814,12 @@ checksum = "511379a8194230c2395d2f5fa627a5a7e108a9f976656ce723ae68fca4097bfc"
 dependencies = [
  "byteorder",
 ]
+
+[[package]]
+name = "paste"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5d65c4d95931acda4498f675e332fcbdc9a06705cd07086c510e9b6009cd1c1"
 
 [[package]]
 name = "peeking_take_while"

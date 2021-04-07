@@ -86,14 +86,9 @@ pub fn get_remote(remote_name: &str, origin: &str, skip_api_key: bool) -> Result
     let domain = get_domain(origin)?;
     Ok(match domain {
         "github.com" => {
-            let name = match github::get_github_project_name(origin) {
-                Some(name) => name,
-                None => {
-                    return Err(anyhow!(
-                        "Could not parse the GitHub project name from the origin."
-                    ));
-                }
-            };
+            let name = github::get_github_project_name(origin).ok_or_else(|| {
+                anyhow!("Could not parse the GitHub project name from the origin.")
+            })?;
             let mut remote = github::GitHub {
                 id: String::from(&name),
                 domain: String::from("github.com"),
@@ -111,28 +106,16 @@ pub fn get_remote(remote_name: &str, origin: &str, skip_api_key: bool) -> Result
         }
         // For now, if not GitHub, then GitLab
         gitlab_domain => {
-            let namespace = match gitlab::get_gitlab_project_namespace(origin) {
-                Some(ns) => ns,
-                None => {
-                    return Err(anyhow!(
-                        "Could not parse the GitLab project namespace from the origin."
-                    ));
-                }
-            };
-            let name = match gitlab::get_gitlab_project_name(origin) {
-                Some(name) => name,
-                None => {
-                    return Err(anyhow!(
-                        "Could not parse the GitLab project name from the origin."
-                    ));
-                }
-            };
-            let full_path = match gitlab::get_gitlab_project_full_path(origin) {
-                Some(full_path) => full_path,
-                None => {
-                    return Err(anyhow!("Could not parse the GitLab path from the origin."));
-                }
-            };
+            let namespace = gitlab::get_gitlab_project_namespace(origin).ok_or_else(|| {
+                anyhow!("Could not parse the GitLab project namespace from the origin.")
+            })?;
+            let name = gitlab::get_gitlab_project_name(origin)
+                .debug_some("Project name")
+                .ok_or_else(|| {
+                    anyhow!("Could not parse the GitLab project name from the origin.")
+                })?;
+            let full_path = gitlab::get_gitlab_project_full_path(origin)
+                .ok_or_else(|| anyhow!("Could not parse the GitLab path from the origin."))?;
             let mut remote = gitlab::GitLab {
                 id: String::from(""),
                 domain: String::from(gitlab_domain),

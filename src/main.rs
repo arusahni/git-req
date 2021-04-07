@@ -8,6 +8,7 @@ use colored::*;
 use git2::ErrorCode;
 use lazy_static::lazy_static;
 use log::{debug, error, info, trace};
+use logchop::*;
 use std::io::{self, stdin, stdout, Cursor, Write};
 use std::{env, include_str, process};
 use tabwriter::TabWriter;
@@ -30,20 +31,17 @@ fn get_remote(remote_name: &str, fetch_api_key: bool) -> Result<Box<dyn remotes:
 
 /// Get the remote, fail hard otherwise
 fn get_remote_hard(remote_name: &str, fetch_api_key: bool) -> Box<dyn remotes::Remote> {
-    match get_remote(remote_name, fetch_api_key) {
-        Ok(x) => x,
-        Err(error) => {
-            eprintln!(
-                "{}",
-                format!(
-                    "There was a problem finding the remote Git repo: {}",
-                    &error
-                )
-                .red()
-            );
-            process::exit(1);
-        }
-    }
+    get_remote(remote_name, fetch_api_key).unwrap_or_else(|error| {
+        eprintln!(
+            "{}",
+            format!(
+                "There was a problem finding the remote Git repo: {}",
+                &error
+            )
+            .red()
+        );
+        process::exit(1);
+    })
 }
 
 /// Check out the branch corresponding to the MR ID and the remote's name
@@ -51,36 +49,32 @@ fn checkout_mr(remote_name: &str, mr_id: i64) {
     info!("Getting MR: {}", mr_id);
     let mut remote = get_remote_hard(remote_name, true);
     debug!("Found remote: {}", remote);
-    let remote_branch_name = match remote.get_remote_req_branch(mr_id) {
-        Ok(name) => name,
-        Err(error) => {
-            eprintln!(
-                "{}",
-                format!(
-                    "There was a problem ascertaining the branch name: {}",
-                    &error
-                )
-                .red()
-            );
-            process::exit(1);
-        }
-    };
+    let remote_branch_name = remote.get_remote_req_branch(mr_id).unwrap_or_else(|error| {
+        eprintln!(
+            "{}",
+            format!(
+                "There was a problem ascertaining the branch name: {}",
+                &error
+            )
+            .red()
+        );
+        process::exit(1);
+    });
     debug!("Got remote branch name: {}", remote_branch_name);
-    match git::checkout_branch(
+    git::checkout_branch(
         remote_name,
         &remote_branch_name,
         &remote.get_local_req_branch(mr_id).unwrap(),
         remote.has_virtual_remote_branch_names(),
-    ) {
-        Err(err) => {
-            eprintln!(
-                "{}",
-                format!("There was an error checking out the branch: {}", err).red()
-            );
-            process::exit(1)
-        }
-        Ok(_) => info!("Done!"),
-    };
+    )
+    .info_ok("Done")
+    .unwrap_or_else(|err| {
+        eprintln!(
+            "{}",
+            format!("There was an error checking out the branch: {}", err).red()
+        );
+        process::exit(1)
+    });
 }
 
 /// Clear the API key for the current domain

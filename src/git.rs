@@ -46,7 +46,7 @@ pub fn get_remote_url(remote: &str) -> String {
 
 /// Get a value fom the repository config
 pub fn get_repo_info(repo_field: &str) -> Result<String> {
-    let repo = Repository::open_from_env().expect("Couldn't find repository");
+    let repo = Repository::open_from_env().map_err(|_| anyhow!("Couldn't find repository"))?;
     let cfg = repo.config().unwrap();
     cfg.get_string(repo_field)
         .map_err(|err| anyhow!(err.to_string()))
@@ -124,10 +124,12 @@ pub fn delete_req_config(domain: &str, field: &str) -> Result<(), git2::Error> {
 
 /// Guess the name of the default remote
 pub fn guess_default_remote_name() -> Result<String> {
-    let repo = Repository::open_from_env().expect("Couldn't find repository");
-    let remotes = repo.remotes().expect("Couldn't fetch the list of remotes");
+    let repo = Repository::open_from_env().map_err(|_| anyhow!("Couldn't find repository"))?;
+    let remotes = repo
+        .remotes()
+        .map_err(|_| anyhow!("Couldn't fetch the list of remotes"))?;
     match remotes.len() {
-        0 => panic!("Could not find any remotes"),
+        0 => Err(anyhow!("Could not find any remotes")),
         1 => Ok(String::from(remotes.get(0).unwrap())),
         _ => match repo.find_remote("origin") {
             Ok(_) => Ok(String::from("origin")),

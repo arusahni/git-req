@@ -41,7 +41,7 @@ jobs:
           - os: ubuntu-latest
             asset_suffix: linux-amd64
           - os: macos-latest
-            asset_name: macos-amd64
+            asset_suffix: macos-amd64
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

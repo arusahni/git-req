@@ -48,15 +48,15 @@ jobs:
       - name: Build project
         run: cargo build --release --locked
       - name: Create archive
-        run: tar czf git-req-${{ needs.release.release_version }}-${{ matrix.asset_suffix }}.tar.gz -C target/release/ git-req
+        run: tar czf git-req-${{ needs.release.outputs.release_version }}-${{ matrix.asset_suffix }}.tar.gz -C target/release/ git-req
       - name: Upload binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.release_upload_url }}
-          asset_path: git-req-${{ needs.release.release_version }}-${{ matrix.asset_suffix }}.tar.gz
-          asset_name: git-req-${{ needs.release.release_version }}-${{ matrix.asset_suffix }}.tar.gz
+          asset_path: git-req-${{ needs.release.outputs.release_version }}-${{ matrix.asset_suffix }}.tar.gz
+          asset_name: git-req-${{ needs.release.outputs.release_version }}-${{ matrix.asset_suffix }}.tar.gz
           asset_content_type: application/octet-stream
 
   build-win:

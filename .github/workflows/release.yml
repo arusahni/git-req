@@ -13,16 +13,19 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_version: ${{ steps.get_version.outputs.version }}
     steps:
       - uses: actions/checkout@v2
+      - name: Get latest release version number
+        id: get_version
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.ref }}
-          release_name: "Release ${{ github.event.ref }}"
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: "Release ${{ steps.get_version.outputs.version }}"
           body: "<INSERT RELEASE DETAILS HERE>"
           draft: true
           prerelease: false
@@ -35,9 +38,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            asset_name: git-req-${{ github.event.ref }}-linux-amd64
+            asset_name: git-req-${{ needs.release.release_version }}-linux-amd64
           - os: macos-latest
-            asset_name: git-req-${{ github.event.ref }}-macos-amd64
+            asset_name: git-req-${{ needs.release.release_version }}-macos-amd64
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

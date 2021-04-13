@@ -236,9 +236,14 @@ fn main() {
         app = build_cli();
         generate_completion(&mut app, &shell_name);
     } else {
-        checkout_mr(
-            &get_remote_name(&matches),
-            matches.value_of("REQUEST_ID").unwrap().parse().unwrap(),
-        );
+        match matches.value_of("REQUEST_ID").unwrap().parse() {
+            Ok(mr_id) => {
+                checkout_mr(&get_remote_name(&matches), mr_id);
+            }
+            Err(_) => {
+                eprintln!("{}", "Invalid request ID provided".red());
+                process::exit(1);
+            }
+        };
     }
 }

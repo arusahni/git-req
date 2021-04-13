@@ -8,12 +8,12 @@ use regex::Regex;
 use yaml_rust::yaml::Hash;
 use yaml_rust::{Yaml, YamlLoader};
 
-fn s2y<T: ToString>(s: T) -> Yaml {
+fn string_to_yaml<T: ToString>(s: T) -> Yaml {
     Yaml::String(s.to_string())
 }
 
 fn parse_str<T: ToString>(a: &Hash, k: T) -> String {
-    let s = a.get(&s2y(k));
+    let s = a.get(&string_to_yaml(k));
     match s {
         Some(ele) => ele.as_str().unwrap().to_string(),
         None => "".to_string(),
@@ -39,15 +39,15 @@ fn set_args(mut p: Manual, y: &Yaml) -> Manual {
         let (key, val) = karg.as_hash().unwrap().iter().next().unwrap();
         let key = key.as_str().unwrap();
         let arg = val.as_hash().unwrap();
-        if arg.get(&s2y("index")).is_none() {
-            let takes_value = arg.get(&s2y("takes_value"));
+        if arg.get(&string_to_yaml("index")).is_none() {
+            let takes_value = arg.get(&string_to_yaml("takes_value"));
             if takes_value.is_none() || !takes_value.unwrap().as_bool().unwrap() {
                 let mut f = Flag::new()
-                    .long(parse_str(&arg, "long").as_str())
+                    .long(format!("--{}", parse_str(&arg, "long")).as_str())
                     .help(parse_str(&arg, "help").as_str());
                 let short = parse_str(&arg, "short");
                 if !short.is_empty() {
-                    f = f.short(short.as_str());
+                    f = f.short(format!("-{}", short).as_str());
                 }
                 p = p.flag(f);
             } else {
@@ -58,12 +58,12 @@ fn set_args(mut p: Manual, y: &Yaml) -> Manual {
                     key
                 };
                 let mut o = Opt::new(key)
-                    .long(parse_str(&arg, "long").as_str())
+                    .long(format!("--{}", parse_str(&arg, "long")).as_str())
                     .help(parse_str(&arg, "help").as_str());
                 let short = parse_str(&arg, "short");
                 let default_value = parse_str(&arg, "default_value");
                 if !short.is_empty() {
-                    o = o.short(short.as_str());
+                    o = o.short(format!("-{}", short).as_str());
                 }
                 if !default_value.is_empty() {
                     o = o.default_value(default_value.as_str());

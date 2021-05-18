@@ -8,7 +8,6 @@ use colored::*;
 use git2::ErrorCode;
 use lazy_static::lazy_static;
 use log::{debug, error, info, trace};
-use logchop::*;
 use std::io::{self, stdin, stdout, Cursor, Write};
 use std::{env, include_str, process};
 use tabwriter::TabWriter;
@@ -58,20 +57,27 @@ fn checkout_mr(remote_name: &str, mr_id: i64) {
         abort(&message);
     });
     debug!("Got remote branch name: {}", remote_branch_name);
-    git::checkout_branch(
+    match git::checkout_branch(
         remote_name,
         &remote_branch_name,
         &remote.get_local_req_branch(mr_id).unwrap(),
         remote.has_virtual_remote_branch_names(),
     )
-    .info_ok("Done")
     .unwrap_or_else(|err| {
-        eprintln!(
-            "{}",
-            format!("There was an error checking out the branch: {}", err).red()
-        );
-        process::exit(1)
-    });
+        let message = format!("There was an error checking out the branch: {}", err);
+        abort(&message);
+    }) {
+        git::CheckoutResult::BranchChanged => {
+            if git::push_current_ref(mr_id).is_err() {
+                trace!("Couldn't update the current ref");
+                eprintln!("{}", "failed to update some git-req metadata".yellow());
+            }
+        }
+        _ => {
+            eprintln!("Already on branch");
+        }
+    };
+    trace!("Done");
 }
 
 /// Clear the API key for the current domain
@@ -229,14 +235,18 @@ fn main() {
         app = build_cli();
         generate_completion(&mut app, &shell_name);
     } else {
-        match matches.value_of("REQUEST_ID").unwrap().parse() {
-            Ok(mr_id) => {
-                checkout_mr(&get_remote_name(&matches), mr_id);
-            }
-            Err(_) => {
-                eprintln!("{}", "Invalid request ID provided".red());
-                process::exit(1);
-            }
+        let request_id = matches.value_of("REQUEST_ID").unwrap();
+        let mr_id = if request_id == "-" {
+            trace!("Received request for previous MR");
+            git::get_previous_mr_id().unwrap_or_else(|_| {
+                abort("Could not find previous request");
+            })
+        } else {
+            trace!("Received request for numbered MR: {}", request_id);
+            request_id.parse::<i64>().unwrap_or_else(|_| {
+                abort("Invalid request ID provided");
+            })
         };
+        checkout_mr(&get_remote_name(&matches), mr_id);
     }
 }

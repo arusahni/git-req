@@ -23,6 +23,11 @@ lazy_static! {
     };
 }
 
+fn abort(message: &str) -> ! {
+    eprintln!("{}", message.red());
+    process::exit(1);
+}
+
 /// Get the remote for the current project
 fn get_remote(remote_name: &str, fetch_api_key: bool) -> Result<Box<dyn remotes::Remote>> {
     let remote_url = git::get_remote_url(remote_name);
@@ -32,15 +37,11 @@ fn get_remote(remote_name: &str, fetch_api_key: bool) -> Result<Box<dyn remotes:
 /// Get the remote, fail hard otherwise
 fn get_remote_hard(remote_name: &str, fetch_api_key: bool) -> Box<dyn remotes::Remote> {
     get_remote(remote_name, fetch_api_key).unwrap_or_else(|error| {
-        eprintln!(
-            "{}",
-            format!(
-                "There was a problem finding the remote Git repo: {}",
-                &error
-            )
-            .red()
+        let message = format!(
+            "There was a problem finding the remote Git repo: {}",
+            &error
         );
-        process::exit(1);
+        abort(&message);
     })
 }
 
@@ -50,15 +51,11 @@ fn checkout_mr(remote_name: &str, mr_id: i64) {
     let mut remote = get_remote_hard(remote_name, true);
     debug!("Found remote: {}", remote);
     let remote_branch_name = remote.get_remote_req_branch(mr_id).unwrap_or_else(|error| {
-        eprintln!(
-            "{}",
-            format!(
-                "There was a problem ascertaining the branch name: {}",
-                &error
-            )
-            .red()
+        let message = format!(
+            "There was a problem ascertaining the branch name: {}",
+            &error
         );
-        process::exit(1);
+        abort(&message);
     });
     debug!("Got remote branch name: {}", remote_branch_name);
     git::checkout_branch(
@@ -92,15 +89,11 @@ fn clear_domain_key(remote_name: &str) {
         Ok(_) => eprintln!("{}", "Domain key deleted!".green()),
         Err(e) => {
             error!("Git Config error: {}", e);
-            eprintln!(
-                "{}",
-                format!(
-                    "There was an error deleting the domain key: {}",
-                    e.message()
-                )
-                .red()
+            let message = format!(
+                "There was an error deleting the domain key: {}",
+                e.message()
             );
-            process::exit(1)
+            abort(&message);
         }
     }
 }

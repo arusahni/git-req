@@ -29,11 +29,7 @@ fn slugify_domain(domain: &str) -> String {
 pub fn get_remotes() -> HashSet<String> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     match repo.remotes() {
-        Ok(remotes) => remotes
-            .into_iter()
-            .filter_map(|rem| rem)
-            .map(String::from)
-            .collect(),
+        Ok(remotes) => remotes.into_iter().flatten().map(String::from).collect(),
         Err(_) => HashSet::new(),
     }
 }

@@ -1,7 +1,8 @@
 use anyhow::{anyhow, Result};
-use std::collections::HashSet;
+use logchop::OptionLogger;
 use std::path::Path;
 use std::str;
+use std::{collections::HashSet, convert::TryInto};
 
 use duct::cmd;
 use git2::{Config, Repository};
@@ -138,13 +139,50 @@ pub fn guess_default_remote_name() -> Result<String> {
     }
 }
 
+/// Get the ID of the previous MR that had been checked out using git-req
+pub fn get_previous_mr_id() -> Result<i64> {
+    let repo = Repository::open_from_env().expect("Couldn't find repository");
+    let testco = repo.find_reference("git-req/previous")?;
+    let content = testco.peel_to_blob()?;
+    let binary = content.content();
+    let reqnum = i64::from_le_bytes(binary.try_into()?);
+    debug!("Loaded previous reference MR number: {}", reqnum);
+    Ok(reqnum)
+}
+
+/// Push a new `current` history ref, moving the existing `current` to `previous`
+pub fn push_current_ref(new_req_number: i64) -> Result<i64> {
+    trace!("Storing refs for MR {}", new_req_number);
+    let repo = Repository::open_from_env().expect("Couldn't find repository");
+    let old_oid = match repo.find_reference("git-req/current") {
+        Ok(current_ref) => current_ref
+            .target()
+            .debug_none("Could not peel current ref"),
+        Err(_) => None,
+    };
+    let data = new_req_number.to_le_bytes();
+    let new_oid = repo.blob(&data).unwrap();
+    if let Some(oid) = old_oid {
+        repo.reference("git-req/previous", oid, true, "").unwrap();
+        debug!("Wrote old OID '{}' to git_req/previous", oid);
+    };
+    repo.reference("git-req/current", new_oid, true, "")?;
+    Ok(new_req_number)
+}
+
+#[derive(Debug)]
+pub enum CheckoutResult {
+    BranchChanged,
+    BranchUnchanged,
+}
+
 /// Check out a branch by name
 pub fn checkout_branch(
     remote_name: &str,
     remote_branch_name: &str,
     local_branch_name: &str,
     is_virtual_remote_branch: bool,
-) -> Result<()> {
+) -> Result<CheckoutResult> {
     let repo = Repository::open_from_env().expect("Couldn't find repository");
     let local_branch_name = match get_project_config("defaultremote") {
         Some(default_remote_name) => {
@@ -166,8 +204,16 @@ pub fn checkout_branch(
     match local_branch_exists {
         Ok(_) => {
             debug!("Checking out branch: {}", local_branch_name);
+            let head = repo.head()?;
+            trace!("On head: {:?}", head.name());
+            if head.is_branch()
+                && head.name().unwrap() == format!("refs/heads/{}", &local_branch_name)
+            {
+                // return Err(anyhow!("Already on {}", &local_branch_name));
+                return Ok(CheckoutResult::BranchUnchanged);
+            }
             match cmd!("git", "checkout", &local_branch_name).run() {
-                Ok(_) => Ok(()),
+                Ok(_) => Ok(CheckoutResult::BranchChanged),
                 Err(err) => Err(anyhow!("Could not check out local branch: {}", err)),
             }
         }
@@ -203,7 +249,7 @@ pub fn checkout_branch(
                 );
             };
             match cmd("git", checkout_args).run() {
-                Ok(_) => Ok(()),
+                Ok(_) => Ok(CheckoutResult::BranchChanged),
                 Err(err) => Err(anyhow!("Could not check out local branch: {}", err)),
             }
         }

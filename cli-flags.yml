@@ -81,7 +81,7 @@ args:
       takes_value: true
       required: false
   - REQUEST_ID:
-      help: the ID of the MR or PR
+      help: The ID of the MR or PR, or '-' to reference the one previously checked out
       takes_value: true
       required_unless_one:
         - NEW_PROJECT_ID

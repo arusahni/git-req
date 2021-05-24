@@ -14,6 +14,7 @@ jobs:
     outputs:
       release_upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_version: ${{ steps.get_version.outputs.version }}
+      release_version_without_v: ${{ steps.get_version.outputs.version-without-v }}
     steps:
       - uses: actions/checkout@v2
       - name: Get latest release version number
@@ -86,13 +87,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: deb Build
-        uses: ebbflow-io/cargo-deb-amd64-ubuntu@1.0
+        run: |
+          cargo install cargo-deb
+          cargo deb -- --locked
       - name: Upload package
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.release_upload_url }}
-          asset_path: target/x86_64-unknown-linux-musl/debian/git-req_${{ needs.release.outputs.release_version }}_amd64.deb
-          asset_name: git-req_${{ needs.release.outputs.release_version }}_amd64.deb
+          asset_path: target/debian/git-req_${{ needs.release.outputs.release_version_without_v }}_amd64.deb
+          asset_name: git-req_${{ needs.release.outputs.release_version_without_v }}_amd64.deb
           asset_content_type: application/octet-stream

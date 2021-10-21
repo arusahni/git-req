@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["git", "gitlab", "github"]
 categories = ["command-line-utilities", "development-tools"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 exclude = ["ci/**/*", "docs/**/*", "appveyor.yml", ".travis.yml", "pkg/**/*"]
 build = "build.rs"
 

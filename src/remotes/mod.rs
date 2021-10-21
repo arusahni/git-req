@@ -67,7 +67,7 @@ pub fn get_domain(origin: &str) -> Result<&str> {
 
 /// Get the API key for the given domain. If absent, prompt.
 fn get_api_key(domain: &str) -> String {
-    git::get_req_config(&domain, "apikey").unwrap_or_else(|| {
+    git::get_req_config(domain, "apikey").unwrap_or_else(|| {
         let mut newkey = String::new();
         println!("No API token for {} found. See https://github.com/arusahni/git-req/wiki/API-Keys for instructions.", domain);
         print!("{} API token: ", domain);
@@ -76,7 +76,7 @@ fn get_api_key(domain: &str) -> String {
             .read_line(&mut newkey)
             .expect("Did not input a correct key");
         trace!("New Key: {}", &newkey);
-        git::set_req_config(&domain, "apikey", &newkey.trim());
+        git::set_req_config(domain, "apikey", newkey.trim());
         newkey.trim().to_string()
     })
 }
@@ -127,7 +127,7 @@ pub fn get_remote(remote_name: &str, origin: &str, skip_api_key: bool) -> Result
                 api_key: String::from(""),
             };
             if !skip_api_key {
-                let apikey = get_api_key(&domain);
+                let apikey = get_api_key(domain);
                 info!("API Key: {}", &apikey);
                 remote.api_key = apikey;
             }

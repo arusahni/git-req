@@ -43,25 +43,25 @@ fn set_args(mut p: Manual, y: &Yaml) -> Manual {
             let takes_value = arg.get(&string_to_yaml("takes_value"));
             if takes_value.is_none() || !takes_value.unwrap().as_bool().unwrap() {
                 let mut f = Flag::new()
-                    .long(format!("--{}", parse_str(&arg, "long")).as_str())
-                    .help(parse_str(&arg, "help").as_str());
-                let short = parse_str(&arg, "short");
+                    .long(format!("--{}", parse_str(arg, "long")).as_str())
+                    .help(parse_str(arg, "help").as_str());
+                let short = parse_str(arg, "short");
                 if !short.is_empty() {
                     f = f.short(format!("-{}", short).as_str());
                 }
                 p = p.flag(f);
             } else {
-                let o_val = parse_str(&arg, "value_name");
+                let o_val = parse_str(arg, "value_name");
                 let key = if !o_val.is_empty() {
                     o_val.as_str()
                 } else {
                     key
                 };
                 let mut o = Opt::new(key)
-                    .long(format!("--{}", parse_str(&arg, "long")).as_str())
-                    .help(parse_str(&arg, "help").as_str());
-                let short = parse_str(&arg, "short");
-                let default_value = parse_str(&arg, "default_value");
+                    .long(format!("--{}", parse_str(arg, "long")).as_str())
+                    .help(parse_str(arg, "help").as_str());
+                let short = parse_str(arg, "short");
+                let default_value = parse_str(arg, "default_value");
                 if !short.is_empty() {
                     o = o.short(format!("-{}", short).as_str());
                 }

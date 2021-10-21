@@ -91,7 +91,7 @@ pub fn set_project_config(field_name: &str, value: &str) {
 /// Get a value for the given global git-req config
 pub fn get_req_config(domain: &str, field: &str) -> Option<String> {
     let slug = slugify_domain(domain);
-    let cfg = Config::open(&Path::new(
+    let cfg = Config::open(Path::new(
         &shellexpand::tilde("~/.gitreqconfig").to_string(),
     ))
     .unwrap();
@@ -101,7 +101,7 @@ pub fn get_req_config(domain: &str, field: &str) -> Option<String> {
 /// Set a value for the global git-req configuration
 pub fn set_req_config(domain: &str, field: &str, value: &str) {
     let slug = slugify_domain(domain);
-    let mut cfg = Config::open(&Path::new(
+    let mut cfg = Config::open(Path::new(
         &shellexpand::tilde("~/.gitreqconfig").to_string(),
     ))
     .unwrap();
@@ -112,7 +112,7 @@ pub fn set_req_config(domain: &str, field: &str, value: &str) {
 /// Clear the value for the lobal git-req configuration
 pub fn delete_req_config(domain: &str, field: &str) -> Result<(), git2::Error> {
     let slug = slugify_domain(domain);
-    let mut cfg = Config::open(&Path::new(
+    let mut cfg = Config::open(Path::new(
         &shellexpand::tilde("~/.gitreqconfig").to_string(),
     ))
     .unwrap();
@@ -215,12 +215,12 @@ pub fn checkout_branch(
         }
         Err(_) => {
             // Fetch the remote branch if there's no local branch with the correct name
-            let mut fetch_args = vec!["fetch", &remote_name];
+            let mut fetch_args = vec!["fetch", remote_name];
             let remote_to_local_binding = format!("{}:{}", remote_branch_name, local_branch_name);
             fetch_args.push(if is_virtual_remote_branch {
                 &remote_to_local_binding
             } else {
-                &remote_branch_name
+                remote_branch_name
             });
             if cmd("git", fetch_args).run().is_err() {
                 return Err(anyhow!(

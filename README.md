@@ -1,5 +1,4 @@
-[![Travis build status](https://travis-ci.com/arusahni/git-req.svg?branch=master)](https://travis-ci.com/arusahni/git-req)
-[![Appveyor build status](https://ci.appveyor.com/api/projects/status/qs5cwdpsx1pdt4dg?svg=true)](https://ci.appveyor.com/project/arusahni/git-req)
+![Github build status](https://github.com/arusahni/git-req/actions/workflows/ci.yml/badge.svg?branch=master)
 [![Latest version](https://img.shields.io/crates/v/git-req.svg?style=flat)](https://crates.io/crates/git-req)
 
 git-req

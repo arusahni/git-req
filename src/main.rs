@@ -84,7 +84,7 @@ fn checkout_mr(remote_name: &str, mr_id: i64) {
 fn clear_domain_key(remote_name: &str) {
     trace!("Deleting domain key");
     let mut remote = get_remote_hard(remote_name, false);
-    let deleted = match git::delete_req_config(&remote.get_domain(), "apikey") {
+    let deleted = match git::delete_req_config(remote.get_domain(), "apikey") {
         Ok(_) => Ok(true),
         Err(e) => match e.code() {
             ErrorCode::NotFound => Ok(false),
@@ -108,7 +108,7 @@ fn clear_domain_key(remote_name: &str) {
 fn set_domain_key(remote_name: &str, new_key: &str) {
     trace!("Setting domain key: {}", new_key);
     let mut remote = get_remote_hard(remote_name, false);
-    git::set_req_config(&remote.get_domain(), "apikey", new_key);
+    git::set_req_config(remote.get_domain(), "apikey", new_key);
     eprintln!("{}", "Domain key changed!".green());
 }
 
@@ -233,7 +233,7 @@ fn main() {
         set_default_remote(remote_name);
     } else if let Some(shell_name) = matches.value_of("GENERATE_COMPLETIONS") {
         app = build_cli();
-        generate_completion(&mut app, &shell_name);
+        generate_completion(&mut app, shell_name);
     } else {
         let request_id = matches.value_of("REQUEST_ID").unwrap();
         let mr_id = if request_id == "-" {

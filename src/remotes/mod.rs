@@ -49,13 +49,6 @@ impl fmt::Display for dyn Remote {
     }
 }
 
-/// Debug a remote
-impl fmt::Debug for dyn Remote {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 /// Get the domain from an origin URL
 pub fn get_domain(origin: &str) -> Result<&str> {
     let domain_regex = Regex::new(r"((http[s]?|ssh)://)?(\S+@)?(?P<domain>([^:/])+)").unwrap();

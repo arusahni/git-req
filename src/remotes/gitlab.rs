@@ -97,7 +97,7 @@ fn query_gitlab_project_id(remote: &GitLab) -> Result<i64> {
     let url = &format!(
         "{}/projects/{}",
         remote.api_root,
-        remote.full_path.replace("/", "%2F")
+        remote.full_path.replace('/', "%2F")
     );
     trace!("Attempting direct project ID lookup: {}", url);
     let resp = query_gitlab_api(url, &remote.api_key);

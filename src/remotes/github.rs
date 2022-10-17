@@ -87,10 +87,11 @@ fn retrieve_github_project_pull_requests(remote: &GitHub) -> Result<Vec<MergeReq
         }
         Err(response) => {
             debug!("Failed PR list query response: {:?}", response);
-            if response.status() == 404 {
-                return Err(anyhow!("remote project not found"));
-            }
-            return Err(anyhow!("failed to read API response"));
+            return match response.status() {
+                401 => Err(anyhow!("API unauthorized")),
+                404 => Err(anyhow!("remote project not found")),
+                _ => Err(anyhow!("failed to read API response")),
+            };
         }
     };
     Ok(gprs.into_iter().map(github_to_mr).collect())

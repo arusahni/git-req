@@ -138,7 +138,10 @@ fn list_open_requests(remote_name: &str) {
     info!("Getting open requests");
     let mut remote = get_remote_hard(remote_name, true);
     debug!("Found remote: {}", remote);
-    let mrs = remote.get_req_names().unwrap();
+    let mrs = remote.get_req_names().unwrap_or_else(|error| {
+        let message = format!("There was a problem querying the open reqs: {}", &error);
+        abort(&message);
+    });
     let mut tw = TabWriter::new(io::stdout()).padding(4);
     for mr in &mrs {
         if remote.has_useful_branch_names() {

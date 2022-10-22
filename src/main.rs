@@ -188,7 +188,7 @@ fn get_remote_name(matches: &ArgMatches) -> String {
                 .expect("Did not input a name");
             trace!("New remote: {}", &new_remote_name);
             if !git::get_remotes().contains(new_remote_name.trim()) {
-                panic!("Invalid remote name provided")
+                abort("Invalid remote name provided")
             }
             new_remote_name
         });
@@ -238,7 +238,9 @@ fn main() {
         app = build_cli();
         generate_completion(&mut app, shell_name);
     } else {
-        let request_id = matches.value_of("REQUEST_ID").unwrap();
+        let request_id = matches.value_of("REQUEST_ID").unwrap_or_else(|| {
+            abort("Request ID required");
+        });
         let mr_id = if request_id == "-" {
             trace!("Received request for previous MR");
             git::get_previous_mr_id().unwrap_or_else(|_| {

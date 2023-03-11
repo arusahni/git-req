@@ -95,7 +95,7 @@ fn main() -> std::io::Result<()> {
         Ok(s) => s,
         Err(_) => String::from("target"),
     };
-    let trg_dir = Path::new(&trg_dir).join(&env::var("PROFILE").unwrap());
+    let trg_dir = Path::new(&trg_dir).join(env::var("PROFILE").unwrap());
 
     let yml = YamlLoader::load_from_str(include_str!("cli-flags.yml")).unwrap();
     let yml = yml.get(0).unwrap();

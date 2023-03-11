@@ -82,10 +82,10 @@ impl Remote for GitLab {
 }
 
 /// Query the GitLab API
-fn query_gitlab_api(url: &str, token: &str) -> Result<ureq::Response, ureq::Response> {
+fn query_gitlab_api(url: &str, token: &str) -> Result<ureq::Response, Box<ureq::Response>> {
     let response = ureq::get(url).set("PRIVATE-TOKEN", token).call();
     if response.error() {
-        return Err(response);
+        return Err(Box::new(response));
     }
     Ok(response)
 }

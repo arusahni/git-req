@@ -64,13 +64,13 @@ fn github_to_mr(req: GitHubPullRequest) -> MergeRequest {
 }
 
 /// Query the GitHub API
-fn query_github_api(url: &str, token: &str) -> Result<ureq::Response, ureq::Response> {
+fn query_github_api(url: &str, token: &str) -> Result<ureq::Response, Box<ureq::Response>> {
     trace!("Querying {}", url);
     let response = ureq::get(url)
         .set("Authorization", &format!("token {}", token))
         .call();
     if response.error() {
-        return Err(response);
+        return Err(Box::new(response));
     }
     Ok(response)
 }

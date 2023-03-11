@@ -40,7 +40,7 @@ tabwriter = "1"
 color-backtrace = "0.2"
 colored = "1.8"
 ureq = {version = "0.12.0", features = ["json"]}
-yaml-rust = "0.3.5"  # Using the same version that clap pushes for type compatibility
+yaml-rust = "0.4.1"  # Using the same version that clap pushes for type compatibility
 git-url-parse = "0.3"
 anyhow = "1.0"
 logchop = "0.1"
@@ -48,7 +48,7 @@ logchop = "0.1"
 [build-dependencies]
 man = "0.3.0"
 regex = "1.6"
-yaml-rust = "0.4.5"
+yaml-rust = "0.4.1"
 
 [dependencies.clap]
 version = "~2.33"

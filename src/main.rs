@@ -1,26 +1,19 @@
 ///! GIT REQ!
+mod cli;
 mod git;
 mod remotes;
 
 use anyhow::Result;
-use clap::{crate_authors, crate_version, App, AppSettings, ArgMatches, YamlLoader};
+use clap::{Command, CommandFactory, Parser};
+use clap_complete::{generate, Generator};
 use colored::*;
 use git2::ErrorCode;
-use lazy_static::lazy_static;
 use log::{debug, error, info, trace};
-use std::io::{self, stdin, stdout, Cursor, Write};
-use std::{env, include_str, process};
+use std::io::{self, stdin, stdout, Write};
+use std::{env, process};
 use tabwriter::TabWriter;
-use yaml_rust::Yaml;
 
-lazy_static! {
-    static ref APP_CFG: Yaml = {
-        YamlLoader::load_from_str(include_str!("../cli-flags.yml"))
-            .expect("Failed to load CLI config")
-            .pop()
-            .unwrap()
-    };
-}
+use cli::Cli;
 
 fn abort(message: &str) -> ! {
     eprintln!("{}", message.red());
@@ -160,20 +153,17 @@ fn list_open_requests(remote_name: &str) {
     tw.flush().unwrap();
 }
 
-/// Print a shell completion script
-fn generate_completion(app: &mut App, shell_name: &str) {
-    let mut buffer = Cursor::new(Vec::new());
-    app.gen_completions_to("git-req", shell_name.parse().unwrap(), &mut buffer);
-    let mut output = String::from_utf8(buffer.into_inner()).unwrap_or_else(|_| String::from(""));
-    if shell_name == "zsh" {
-        // Clap assigns the _files completor to the REQUEST_ID. This is undesirable.
-        output = output.replace(":_files", ":");
-    }
-    print!("{}", &output);
+fn print_completions<G: Generator>(generator: G, cmd: &mut Command) {
+    generate(
+        generator,
+        cmd,
+        cmd.get_name().to_string(),
+        &mut io::stdout(),
+    );
 }
 
 /// Get the name of the remote to use for the operation
-fn get_remote_name(matches: &ArgMatches) -> String {
+fn get_remote_name(remote_override: Option<String>) -> String {
     let default_remote_name = git::get_project_config("defaultremote").unwrap_or_else(|| {
         let new_remote_name = git::guess_default_remote_name().unwrap_or_else(|_| {
             let mut new_remote_name = String::new();
@@ -196,19 +186,7 @@ fn get_remote_name(matches: &ArgMatches) -> String {
         new_remote_name
     });
     // Not using Clap's default_value because of https://github.com/clap-rs/clap/issues/1140
-    matches
-        .value_of("REMOTE_NAME")
-        .unwrap_or(&default_remote_name)
-        .to_string()
-}
-
-/// Get the Clap app for CLI matching et al.
-fn build_cli<'a>() -> App<'a, 'a> {
-    App::from_yaml(&APP_CFG)
-        .version(crate_version!())
-        .author(crate_authors!("\n"))
-        .setting(AppSettings::ArgsNegateSubcommands)
-        .usage("git req [OPTIONS] [REQUEST_ID]")
+    remote_override.unwrap_or(default_remote_name)
 }
 
 /// Do the thing
@@ -218,27 +196,25 @@ fn main() {
         .parse_filters(&env::var("REQ_LOG").unwrap_or_default())
         .try_init();
 
-    let mut app = build_cli();
+    let cli = Cli::parse();
 
-    let matches = app.get_matches();
-
-    if let Some(project_id) = matches.value_of("NEW_PROJECT_ID") {
-        set_project_id(&get_remote_name(&matches), project_id);
-    } else if matches.is_present("CLEAR_PROJECT_ID") {
-        clear_project_id(&get_remote_name(&matches));
-    } else if matches.is_present("LIST_MR") {
-        list_open_requests(&get_remote_name(&matches));
-    } else if matches.is_present("CLEAR_DOMAIN_KEY") {
-        clear_domain_key(&get_remote_name(&matches));
-    } else if let Some(domain_key) = matches.value_of("NEW_DOMAIN_KEY") {
-        set_domain_key(&get_remote_name(&matches), domain_key);
-    } else if let Some(remote_name) = matches.value_of("NEW_DEFAULT_REMOTE") {
-        set_default_remote(remote_name);
-    } else if let Some(shell_name) = matches.value_of("GENERATE_COMPLETIONS") {
-        app = build_cli();
-        generate_completion(&mut app, shell_name);
+    if let Some(project_id) = cli.new_project_id {
+        set_project_id(&get_remote_name(cli.remote_name), &project_id);
+    } else if cli.clear_project_id {
+        clear_project_id(&get_remote_name(cli.remote_name));
+    } else if cli.list {
+        list_open_requests(&get_remote_name(cli.remote_name));
+    } else if cli.clear_domain_key {
+        clear_domain_key(&get_remote_name(cli.remote_name));
+    } else if let Some(domain_key) = cli.new_domain_key {
+        set_domain_key(&get_remote_name(cli.remote_name), &domain_key);
+    } else if let Some(remote_name) = cli.new_default_remote {
+        set_default_remote(&remote_name);
+    } else if let Some(generator) = cli.generate_completions {
+        let mut cmd = Cli::command();
+        print_completions(generator, &mut cmd);
     } else {
-        let request_id = matches.value_of("REQUEST_ID").unwrap_or_else(|| {
+        let request_id = cli.request_id.unwrap_or_else(|| {
             abort("Request ID required");
         });
         let mr_id = if request_id == "-" {
@@ -252,6 +228,6 @@ fn main() {
                 abort("Invalid request ID provided");
             })
         };
-        checkout_mr(&get_remote_name(&matches), mr_id);
+        checkout_mr(&get_remote_name(cli.remote_name), mr_id);
     }
 }

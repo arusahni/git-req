@@ -176,8 +176,9 @@ fn get_remote_name(remote_override: Option<String>) -> String {
             stdin()
                 .read_line(&mut new_remote_name)
                 .expect("Did not input a name");
+            new_remote_name = new_remote_name.trim().to_string();
             trace!("New remote: {}", &new_remote_name);
-            if !git::get_remotes().contains(new_remote_name.trim()) {
+            if !git::get_remotes().contains(&new_remote_name) {
                 abort("Invalid remote name provided")
             }
             new_remote_name
